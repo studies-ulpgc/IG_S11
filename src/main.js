@@ -152,7 +152,7 @@ function setupControls() {
       e.preventDefault();
       startCharge();
     }
-    if (e.code === "Escape" && isCharging) {
+    if (e.code === "ArrowDown" && isCharging) {
       cancelCharge();
     }
     if (e.code === "Enter" && !areAllBallsStopped()) {
@@ -227,9 +227,11 @@ function checkOutOfBounds() {
       Math.abs(ball.position.z) > limitZ ||
       ball.position.y < -0.2
     ) {
-      // Si alguna bola salta fuera del tablero, la devolvemos a un hueco libre
       const safePos = findFreeSpot(ball === cueBall ? -2.5 : 0, 0);
       ball.position.copy(safePos);
+      ball.visible = true;
+      ball.scale.set(1, 1, 1);
+
       const body = ball.userData.physicsBody;
       const t = new AmmoLib.btTransform();
       t.setIdentity();
@@ -259,19 +261,24 @@ function checkPockets() {
         body.setLinearVelocity(new AmmoLib.btVector3(0, 0, 0));
         body.setAngularVelocity(new AmmoLib.btVector3(0, 0, 0));
 
-        new TWEEN.Tween(ball.position)
+        const posTween = new TWEEN.Tween(ball.position)
           .to({ x: pocket.x, y: -0.45, z: pocket.z }, 320)
           .easing(TWEEN.Easing.Quadratic.In)
           .start();
 
-        new TWEEN.Tween(ball.scale)
+        const scaleTween = new TWEEN.Tween(ball.scale)
           .to({ x: 0.2, y: 0.2, z: 0.2 }, 320)
           .easing(TWEEN.Easing.Quadratic.In)
           .onComplete(() => {
-            ball.visible = false;
+            // Solo la ocultamos si sigue marcada como entronerada (evita el bug con Enter)
+            if (ball.userData.ballInfo.pocketed) {
+              ball.visible = false;
+            }
             ball.scale.set(1, 1, 1);
           })
           .start();
+
+        ball.userData.pocketTweens = [posTween, scaleTween];
       }
     }
   });
@@ -279,6 +286,12 @@ function checkPockets() {
 
 function respawnCueBallIfPocketed() {
   if (!cueBall || !cueBall.userData.ballInfo.pocketed) return;
+
+  // Cancelamos cualquier animación de caída pendiente antes de reaparecer
+  if (cueBall.userData.pocketTweens) {
+    cueBall.userData.pocketTweens.forEach((tw) => tw.stop());
+    cueBall.userData.pocketTweens = null;
+  }
 
   const freePos = findFreeSpot(-2.5, 0);
   cueBall.userData.ballInfo.pocketed = false;
@@ -302,27 +315,50 @@ function animate() {
 
   const stopped = areAllBallsStopped();
 
-  // Si pulsaste Enter, avanzamos la física 4 veces más rápido hasta que paren
+  // Permitimos girar con izquierda/derecha en todo momento (parado o siguiendo la bola)
+  if (!isShooting) {
+    const turnSpeed = keysPressed["ShiftLeft"] || keysPressed["ShiftRight"] ? 2.4 : 1.1;
+    if (keysPressed["ArrowLeft"]) {
+      setAimAngle(aimAngle - turnSpeed * dt);
+    }
+    if (keysPressed["ArrowRight"]) {
+      setAimAngle(aimAngle + turnSpeed * dt);
+    }
+  }
+
   const simSteps = !stopped && fastForward ? 4 : 1;
   for (let s = 0; s < simSteps; s++) {
     updatePhysics(dt);
     checkPockets();
     checkOutOfBounds();
+
+    // Seguimiento idéntico tanto a velocidad normal como acelerada con Enter
+    if (!areAllBallsStopped() && cameraMode === 1 && cueBall && !cueBall.userData.ballInfo.pocketed) {
+      const followPos = new THREE.Vector3(
+        cueBall.position.x - Math.cos(aimAngle) * 4.5,
+        3.4,
+        cueBall.position.z - Math.sin(aimAngle) * 4.5
+      );
+      camera.position.lerp(followPos, 0.08);
+      controls.target.lerp(cueBall.position, 0.15);
+      camera.lookAt(controls.target);
+    }
+
     if (areAllBallsStopped()) {
       fastForward = false;
       break;
     }
   }
 
-  // Mientras las bolas ruedan en Vista Tiro (1), seguimos suavemente a la bola blanca
+  // Mientras las bolas ruedan en Vista Tiro (1), seguimos la bola blanca y permitimos girar alrededor
   if (!stopped && cameraMode === 1 && cueBall && !cueBall.userData.ballInfo.pocketed) {
     const followPos = new THREE.Vector3(
       cueBall.position.x - Math.cos(aimAngle) * 4.5,
       3.4,
       cueBall.position.z - Math.sin(aimAngle) * 4.5
     );
-    camera.position.lerp(followPos, 0.05);
-    controls.target.lerp(cueBall.position, 0.12);
+    camera.position.lerp(followPos, 0.08);
+    controls.target.lerp(cueBall.position, 0.15);
     camera.lookAt(controls.target);
   }
 
@@ -331,22 +367,13 @@ function animate() {
     wasMoving = false;
     respawnCueBallIfPocketed();
     if (cameraMode === 1) {
-      setCameraMode(1); // Vuelve automáticamente detrás de la blanca para apuntar
+      setCameraMode(1);
     }
   } else if (!stopped) {
     wasMoving = true;
   }
 
   if (stopped && !isShooting) {
-    const turnSpeed = keysPressed["ShiftLeft"] || keysPressed["ShiftRight"] ? 2.4 : 1.1;
-
-    if (keysPressed["ArrowLeft"]) {
-      setAimAngle(aimAngle - turnSpeed * dt);
-    }
-    if (keysPressed["ArrowRight"]) {
-      setAimAngle(aimAngle + turnSpeed * dt);
-    }
-
     if (cameraMode === 1 && cueBall) {
       const { targetPos, lookAtPos } = getShotCameraCoords();
       camera.position.lerp(targetPos, 0.22);

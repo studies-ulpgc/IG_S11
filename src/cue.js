@@ -11,8 +11,16 @@ export let power = 0;
 
 let cueGroup;
 let cueMesh;
-let aimLine;
+let aimGroup;
+let dashMeshes = [];
+let dashMat;
+const MAX_DASHES = 28;
+
 const raycaster = new THREE.Raycaster();
+const colorWhite = new THREE.Color(0xffffff);
+const colorGreen = new THREE.Color(0x22c55e);
+const colorYellow = new THREE.Color(0xeab308);
+const colorRed = new THREE.Color(0xef4444);
 
 export function initCue(scene) {
   cueGroup = new THREE.Group();
@@ -41,39 +49,37 @@ export function initCue(scene) {
   cueMesh.add(buttMesh);
 
   cueMesh.position.x = -(BALL_RADIUS + 0.12);
-  cueGroup.rotation.z = 0.08;
+  cueGroup.rotation.z = -0.14;
 
   cueGroup.add(cueMesh);
   scene.add(cueGroup);
 
-  const lineGeo = new THREE.BufferGeometry().setFromPoints([
-    new THREE.Vector3(0, 0, 0),
-    new THREE.Vector3(1, 0, 0),
-  ]);
-  const lineMat = new THREE.LineDashedMaterial({
+  // Línea de apuntado hecha con segmentos 3D reales (grosor, largo y color dinámicos)
+  aimGroup = new THREE.Group();
+  dashMat = new THREE.MeshBasicMaterial({
     color: 0xffffff,
-    dashSize: 0.18,
-    gapSize: 0.12,
     transparent: true,
-    opacity: 0.85,
+    opacity: 0.92,
   });
-  aimLine = new THREE.Line(lineGeo, lineMat);
-  scene.add(aimLine);
+  const dashGeo = new THREE.BoxGeometry(1, 1, 1);
+
+  for (let i = 0; i < MAX_DASHES; i++) {
+    const dash = new THREE.Mesh(dashGeo, dashMat);
+    dash.visible = false;
+    aimGroup.add(dash);
+    dashMeshes.push(dash);
+  }
+  scene.add(aimGroup);
 }
 
 export function setAimAngle(angle) {
   aimAngle = angle;
 }
 
-export function adjustPower(delta) {
-  if (!isCharging || isShooting) return;
-  power = THREE.MathUtils.clamp(power + delta, 0, 1);
-  cueMesh.position.x = -(BALL_RADIUS + 0.12 + power * 0.9);
-}
-
 export function cancelCharge() {
   isCharging = false;
   power = 0;
+  resetAimLineStyle();
   if (cueMesh) {
     new TWEEN.Tween(cueMesh.position)
       .to({ x: -(BALL_RADIUS + 0.12) }, 150)
@@ -82,12 +88,17 @@ export function cancelCharge() {
   }
 }
 
-export function updateCue(dt, allBallsStopped, reducePowerPressed = false) {
+function resetAimLineStyle() {
+  if (!dashMat) return;
+  dashMat.color.copy(colorWhite);
+}
+
+export function updateCue(dt, allBallsStopped) {
   if (!cueGroup || !cueBall) return;
 
   const canAim = allBallsStopped && !cueBall.userData.ballInfo.pocketed;
   cueGroup.visible = canAim || isShooting;
-  aimLine.visible = canAim && !isShooting;
+  aimGroup.visible = canAim && !isShooting;
 
   if (!canAim && !isShooting) return;
 
@@ -95,7 +106,6 @@ export function updateCue(dt, allBallsStopped, reducePowerPressed = false) {
     cueGroup.position.copy(cueBall.position);
     cueGroup.rotation.y = -aimAngle;
 
-    // Calculamos cuánto espacio libre hay detrás de la bola blanca hasta el borde de madera
     const backDirX = -Math.cos(aimAngle);
     const backDirZ = -Math.sin(aimAngle);
     const limitX = TABLE_WIDTH / 2 + 0.15;
@@ -107,21 +117,26 @@ export function updateCue(dt, allBallsStopped, reducePowerPressed = false) {
     if (backDirZ > 0.01) distToRail = Math.min(distToRail, (limitZ - cueBall.position.z) / backDirZ);
     if (backDirZ < -0.01) distToRail = Math.min(distToRail, (-limitZ - cueBall.position.z) / backDirZ);
 
-    // Si el taco chocaría con el borde de madera, lo elevamos de forma realista (como en billar real)
-    const minTilt = 0.08;
-    const maxTilt = 0.48; // ~27 grados cuando está pegado a la banda
+    const minTilt = -0.14;
+    const maxTilt = -0.52;
     const clearanceRatio = THREE.MathUtils.clamp((distToRail - 0.35) / 2.2, 0, 1);
     cueGroup.rotation.z = THREE.MathUtils.lerp(maxTilt, minTilt, clearanceRatio);
   }
 
   if (isCharging && !isShooting) {
-    // Si pulsas Flecha Abajo mientras cargas, baja la potencia; si no, sube
-    const rate = reducePowerPressed ? -0.85 : 0.85;
-    power = THREE.MathUtils.clamp(power + dt * rate, 0.02, 1);
+    power = THREE.MathUtils.clamp(power + dt * 0.85, 0.02, 1);
     cueMesh.position.x = -(BALL_RADIUS + 0.12 + power * 0.9);
+
+    if (power < 0.5) {
+      dashMat.color.lerpColors(colorGreen, colorYellow, power * 2);
+    } else {
+      dashMat.color.lerpColors(colorYellow, colorRed, (power - 0.5) * 2);
+    }
+  } else if (!isCharging) {
+    resetAimLineStyle();
   }
 
-  if (aimLine.visible) {
+  if (aimGroup.visible) {
     updateAimLine();
   }
 }
@@ -135,12 +150,12 @@ function updateAimLine() {
   raycaster.set(origin, dir);
   const hits = raycaster.intersectObjects(targetBalls, false);
 
-  let endPoint;
+  let totalDist;
   if (hits.length > 0) {
-    endPoint = hits[0].point.clone().sub(dir.clone().multiplyScalar(BALL_RADIUS * 0.5));
+    totalDist = Math.max(0.25, hits[0].distance - BALL_RADIUS * 0.4);
   } else {
-    const maxX = TABLE_WIDTH / 2 - 0.3;
-    const maxZ = TABLE_DEPTH / 2 - 0.3;
+    const maxX = TABLE_WIDTH / 2 - 0.25;
+    const maxZ = TABLE_DEPTH / 2 - 0.25;
     let tMin = 12;
 
     if (dir.x > 0.001) tMin = Math.min(tMin, (maxX - origin.x) / dir.x);
@@ -148,11 +163,42 @@ function updateAimLine() {
     if (dir.z > 0.001) tMin = Math.min(tMin, (maxZ - origin.z) / dir.z);
     if (dir.z < -0.001) tMin = Math.min(tMin, (-maxZ - origin.z) / dir.z);
 
-    endPoint = origin.clone().add(dir.clone().multiplyScalar(Math.max(0.2, tMin)));
+    totalDist = Math.max(0.25, tMin);
   }
 
-  aimLine.geometry.setFromPoints([origin, endPoint]);
-  aimLine.computeLineDistances();
+  // Grosor base más visible y engorda + se alarga conforme sube la potencia
+  const currentPower = isCharging ? power : 0;
+  const dashLength = 0.16 + currentPower * 0.22;
+  const gapLength = 0.12;
+  const thickness = 0.026 + currentPower * 0.042; // Más grueso de base y crece con la fuerza
+  const step = dashLength + gapLength;
+
+  const startOffset = BALL_RADIUS + 0.08;
+  let dist = startOffset;
+  let idx = 0;
+
+  while (dist < totalDist && idx < MAX_DASHES) {
+    const segLen = Math.min(dashLength, totalDist - dist);
+    if (segLen < 0.03) break;
+
+    const midDist = dist + segLen / 2;
+    const dash = dashMeshes[idx];
+    dash.visible = true;
+    dash.position.set(
+      origin.x + dir.x * midDist,
+      BALL_RADIUS * 0.65,
+      origin.z + dir.z * midDist
+    );
+    dash.rotation.y = -aimAngle;
+    dash.scale.set(segLen, thickness * 0.6, thickness);
+
+    dist += step;
+    idx++;
+  }
+
+  for (let i = idx; i < MAX_DASHES; i++) {
+    dashMeshes[i].visible = false;
+  }
 }
 
 export function startCharge() {
@@ -167,6 +213,7 @@ export function releaseShot(customPower = null) {
   isCharging = false;
   isShooting = true;
   power = 0;
+  resetAimLineStyle();
 
   cueGroup.position.copy(cueBall.position);
   cueGroup.rotation.y = -aimAngle;
