@@ -69,6 +69,9 @@ export function updatePhysics(deltaTime) {
 
   for (let i = 0; i < rigidBodies.length; i++) {
     const objThree = rigidBodies[i];
+    // Si la bola ya entró en una tronera, dejamos que Tween.js anime su caída
+    if (objThree.userData.ballInfo && objThree.userData.ballInfo.pocketed) continue;
+
     const objPhys = objThree.userData.physicsBody;
     const ms = objPhys.getMotionState();
 

@@ -11,6 +11,7 @@ import {
   setAimAngle,
   startCharge,
   releaseShot,
+  cancelCharge,
   isCharging,
   isShooting,
   power,
@@ -18,7 +19,8 @@ import {
 
 let scene, camera, renderer, controls;
 const clock = new THREE.Clock();
-let cameraMode = 1; // 1: Detrás de bola, 2: Cenital, 3: Libre
+let cameraMode = 1; // 1: Vista Tiro, 2: Cenital 2D, 3: Libre 3D
+let cenitalVertical = false; // false = horizontal, true = vertical
 let keysPressed = {};
 
 async function init() {
@@ -35,9 +37,10 @@ async function init() {
 
   controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
-  controls.maxPolarAngle = Math.PI / 2 - 0.05; // Evita bajar por debajo del suelo
+  controls.maxPolarAngle = Math.PI / 2 - 0.05;
+  controls.minDistance = 2;
+  controls.maxDistance = 22;
 
-  // Iluminación
   scene.add(new THREE.AmbientLight(0xffffff, 0.55));
   const lampLight = new THREE.DirectionalLight(0xfff5e4, 1.2);
   lampLight.position.set(0, 10, 2);
@@ -62,75 +65,139 @@ async function init() {
   animate();
 }
 
+function updateCameraConstraints() {
+  if (cameraMode === 1) {
+    // Vista tiro: solo permite mirar un poco a izquierda/derecha (±45°) respecto al tiro
+    controls.enableRotate = true;
+    controls.enablePan = false;
+    controls.minPolarAngle = Math.PI / 3.2;
+    controls.maxPolarAngle = Math.PI / 2.25;
+
+    // Calculamos el ángulo azimutal actual detrás de la bola blanca
+    const backAngle = Math.atan2(-Math.sin(aimAngle), -Math.cos(aimAngle));
+    controls.minAzimuthAngle = backAngle - Math.PI / 4;
+    controls.maxAzimuthAngle = backAngle + Math.PI / 4;
+  } else if (cameraMode === 2) {
+    // Vista cenital pura 2D: bloquea rotación 3D y activa desplazamiento plano (pan)
+    controls.enableRotate = false;
+    controls.enablePan = true;
+    controls.screenSpacePanning = true;
+    controls.mouseButtons = {
+      LEFT: THREE.MOUSE.PAN,
+      MIDDLE: THREE.MOUSE.DOLLY,
+      RIGHT: THREE.MOUSE.PAN,
+    };
+    controls.minAzimuthAngle = -Infinity;
+    controls.maxAzimuthAngle = Infinity;
+    controls.minPolarAngle = 0;
+    controls.maxPolarAngle = Math.PI / 2;
+  } else {
+    // Vista libre 3D total
+    controls.enableRotate = true;
+    controls.enablePan = true;
+    controls.mouseButtons = {
+      LEFT: THREE.MOUSE.ROTATE,
+      MIDDLE: THREE.MOUSE.DOLLY,
+      RIGHT: THREE.MOUSE.PAN,
+    };
+    controls.minAzimuthAngle = -Infinity;
+    controls.maxAzimuthAngle = Infinity;
+    controls.minPolarAngle = 0.05;
+    controls.maxPolarAngle = Math.PI / 2 - 0.05;
+  }
+}
+
+function alignShotCamera(instant = false) {
+  if (!cueBall) return;
+  updateCameraConstraints();
+
+  const dist = 3.6;
+  const targetPos = new THREE.Vector3(
+    cueBall.position.x - Math.cos(aimAngle) * dist,
+    1.85,
+    cueBall.position.z - Math.sin(aimAngle) * dist
+  );
+  const lookAtPos = new THREE.Vector3(
+    cueBall.position.x + Math.cos(aimAngle) * 1.6,
+    0.1,
+    cueBall.position.z + Math.sin(aimAngle) * 1.6
+  );
+
+  if (instant) {
+    camera.position.lerp(targetPos, 0.2);
+    controls.target.lerp(lookAtPos, 0.25);
+  } else {
+    new TWEEN.Tween(camera.position)
+      .to({ x: targetPos.x, y: targetPos.y, z: targetPos.z }, 550)
+      .easing(TWEEN.Easing.Cubic.InOut)
+      .start();
+
+    new TWEEN.Tween(controls.target)
+      .to({ x: lookAtPos.x, y: lookAtPos.y, z: lookAtPos.z }, 550)
+      .easing(TWEEN.Easing.Cubic.InOut)
+      .start();
+  }
+}
+
 function setCameraMode(mode) {
   cameraMode = mode;
-  document.querySelectorAll(".cam-controls button").forEach((btn, idx) => {
-    btn.classList.toggle("active", idx + 1 === mode);
-  });
+  document.getElementById("btn-cam-1").classList.toggle("active", mode === 1);
+  document.getElementById("btn-cam-2").classList.toggle("active", mode === 2);
+  document.getElementById("btn-cam-3").classList.toggle("active", mode === 3);
 
-  // Solo permitimos orbitar libremente en modo 3
-  controls.enabled = mode === 3;
+  updateCameraConstraints();
+
+  if (mode === 1) {
+    alignShotCamera(false);
+    return;
+  }
 
   let targetPos, lookAtPos;
-
-  if (mode === 1 && cueBall) {
-    // Detrás de la bola blanca mirando en la dirección del taco
-    const dist = 3.6;
-    targetPos = new THREE.Vector3(
-      cueBall.position.x - Math.cos(aimAngle) * dist,
-      1.9,
-      cueBall.position.z - Math.sin(aimAngle) * dist
-    );
-    lookAtPos = new THREE.Vector3(
-      cueBall.position.x + Math.cos(aimAngle) * 2,
-      0.1,
-      cueBall.position.z + Math.sin(aimAngle) * 2
-    );
-  } else if (mode === 2) {
-    // Vista cenital pura
-    targetPos = new THREE.Vector3(0, 11.5, 0.01);
+  if (mode === 2) {
+    // Horizontal (eje Z ligero) o Vertical (eje X ligero)
+    targetPos = cenitalVertical
+      ? new THREE.Vector3(-0.15, 13.5, 0)
+      : new THREE.Vector3(0, 12.2, 0.15);
     lookAtPos = new THREE.Vector3(0, 0, 0);
   } else {
-    // Vista general libre
-    targetPos = new THREE.Vector3(0, 7.5, 8.5);
+    targetPos = new THREE.Vector3(0, 7.2, 8.8);
     lookAtPos = new THREE.Vector3(0, 0, 0);
   }
 
   new TWEEN.Tween(camera.position)
-    .to({ x: targetPos.x, y: targetPos.y, z: targetPos.z }, 650)
+    .to({ x: targetPos.x, y: targetPos.y, z: targetPos.z }, 550)
     .easing(TWEEN.Easing.Cubic.InOut)
     .start();
 
   new TWEEN.Tween(controls.target)
-    .to({ x: lookAtPos.x, y: lookAtPos.y, z: lookAtPos.z }, 650)
+    .to({ x: lookAtPos.x, y: lookAtPos.y, z: lookAtPos.z }, 550)
     .easing(TWEEN.Easing.Cubic.InOut)
     .start();
 }
 
+function skipTurnWait() {
+  // Detiene todas las bolas inmediatamente para pasar al siguiente turno
+  balls.forEach((ball) => {
+    if (ball.userData.ballInfo.pocketed) return;
+    const body = ball.userData.physicsBody;
+    body.setLinearVelocity(new AmmoLib.btVector3(0, 0, 0));
+    body.setAngularVelocity(new AmmoLib.btVector3(0, 0, 0));
+  });
+}
+
 function setupControls() {
-  // Apuntar moviendo el ratón (cuando no estamos en cámara libre)
-  window.addEventListener("mousemove", (e) => {
-    if (cameraMode === 3 || isCharging || isShooting) return;
-    setAimAngle(aimAngle + e.movementX * 0.004);
-  });
-
-  // Cargar y disparar con clic izquierdo sobre el canvas
-  renderer.domElement.addEventListener("mousedown", (e) => {
-    if (e.button === 0 && areAllBallsStopped()) {
-      startCharge();
-    }
-  });
-  window.addEventListener("mouseup", (e) => {
-    if (e.button === 0 && isCharging) {
-      releaseShot();
-    }
-  });
-
-  // Teclado: flechas para apuntar, Espacio para cargar/tirar, 1-2-3 para cámaras
   window.addEventListener("keydown", (e) => {
     keysPressed[e.code] = true;
-    if (e.code === "Space" && areAllBallsStopped() && !isCharging) {
+
+    if (e.code === "Space" && areAllBallsStopped() && !isCharging && !isShooting) {
+      e.preventDefault();
       startCharge();
+    }
+    if (e.code === "Escape" && isCharging) {
+      cancelCharge();
+    }
+    if (e.code === "Enter" && !areAllBallsStopped()) {
+      skipTurnWait();
     }
     if (e.key === "1") setCameraMode(1);
     if (e.key === "2") setCameraMode(2);
@@ -144,10 +211,14 @@ function setupControls() {
     }
   });
 
-  // Botones HTML de cámara
   document.getElementById("btn-cam-1").addEventListener("click", () => setCameraMode(1));
   document.getElementById("btn-cam-2").addEventListener("click", () => setCameraMode(2));
+  document.getElementById("btn-cenital-rot").addEventListener("click", () => {
+    cenitalVertical = !cenitalVertical;
+    setCameraMode(2);
+  });
   document.getElementById("btn-cam-3").addEventListener("click", () => setCameraMode(3));
+  document.getElementById("btn-cancel-shot").addEventListener("click", () => cancelCharge());
 }
 
 function areAllBallsStopped() {
@@ -167,8 +238,8 @@ function checkPockets() {
       const dz = ball.position.z - pocket.z;
       if (Math.hypot(dx, dz) < POCKET_RADIUS) {
         ball.userData.ballInfo.pocketed = true;
-        ball.visible = false;
 
+        // Retiramos colisión física
         const body = ball.userData.physicsBody;
         const t = new AmmoLib.btTransform();
         t.setIdentity();
@@ -176,6 +247,21 @@ function checkPockets() {
         body.setWorldTransform(t);
         body.setLinearVelocity(new AmmoLib.btVector3(0, 0, 0));
         body.setAngularVelocity(new AmmoLib.btVector3(0, 0, 0));
+
+        // Animación visible de caída dentro de la tronera
+        new TWEEN.Tween(ball.position)
+          .to({ x: pocket.x, y: -0.45, z: pocket.z }, 320)
+          .easing(TWEEN.Easing.Quadratic.In)
+          .start();
+
+        new TWEEN.Tween(ball.scale)
+          .to({ x: 0.2, y: 0.2, z: 0.2 }, 320)
+          .easing(TWEEN.Easing.Quadratic.In)
+          .onComplete(() => {
+            ball.visible = false;
+            ball.scale.set(1, 1, 1);
+          })
+          .start();
       }
     }
   });
@@ -184,6 +270,7 @@ function checkPockets() {
 function respawnCueBallIfPocketed() {
   if (!cueBall || !cueBall.userData.ballInfo.pocketed) return;
   cueBall.userData.ballInfo.pocketed = false;
+  cueBall.scale.set(1, 1, 1);
   cueBall.visible = true;
 
   const body = cueBall.userData.physicsBody;
@@ -200,46 +287,38 @@ function animate() {
   requestAnimationFrame(animate);
   const dt = Math.min(clock.getDelta(), 0.05);
 
-  // Apuntado fino con teclado (flechas izquierda/derecha)
   const stopped = areAllBallsStopped();
-  if (stopped && !isCharging && !isShooting) {
-    if (keysPressed["ArrowLeft"]) setAimAngle(aimAngle - 1.6 * dt);
-    if (keysPressed["ArrowRight"]) setAimAngle(aimAngle + 1.6 * dt);
+  if (stopped && !isShooting) {
+    const turnSpeed = keysPressed["ShiftLeft"] || keysPressed["ShiftRight"] ? 2.4 : 1.1;
+    let isTurning = false;
 
-    // Si la blanca cayó en el turno anterior, la devolvemos a la mesa
-    respawnCueBallIfPocketed();
+    if (keysPressed["ArrowLeft"]) {
+      setAimAngle(aimAngle - turnSpeed * dt);
+      isTurning = true;
+    }
+    if (keysPressed["ArrowRight"]) {
+      setAimAngle(aimAngle + turnSpeed * dt);
+      isTurning = true;
+    }
 
-    // En cámara 1, seguimos suavemente el ángulo de apuntado alrededor de la bola blanca
-    if (cameraMode === 1 && cueBall) {
-      const dist = 3.6;
-      const desiredCam = new THREE.Vector3(
-        cueBall.position.x - Math.cos(aimAngle) * dist,
-        1.9,
-        cueBall.position.z - Math.sin(aimAngle) * dist
-      );
-      camera.position.lerp(desiredCam, 0.12);
-      controls.target.lerp(
-        new THREE.Vector3(
-          cueBall.position.x + Math.cos(aimAngle) * 1.5,
-          0.1,
-          cueBall.position.z + Math.sin(aimAngle) * 1.5
-        ),
-        0.15
-      );
-      camera.lookAt(controls.target);
+    if (cameraMode === 1 && isTurning) {
+      alignShotCamera(true);
+    }
+
+    if (!isCharging) {
+      respawnCueBallIfPocketed();
     }
   }
 
   TWEEN.update();
   updatePhysics(dt);
   checkPockets();
-  updateCue(dt, stopped);
+  updateCue(dt, stopped, !!keysPressed["ArrowDown"]);
 
-  // Actualizar barra de fuerza en el HUD
   const fill = document.getElementById("power-bar-fill");
   if (fill) fill.style.width = `${Math.round(power * 100)}%`;
 
-  if (cameraMode === 3) controls.update();
+  controls.update();
   renderer.render(scene, camera);
 }
 

@@ -85,3 +85,18 @@ canvas {
   font-size: 12px;
   color: #94a3b8;
 }
+
+.btn-small {
+  background: rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  padding: 4px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: bold;
+}
+.btn-small:hover {
+  background: #ef4444;
+  color: white;
+}
