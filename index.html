@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Billar 3D - Three.js & Ammo.js</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <script src="https://cdn.jsdelivr.net/gh/kripken/ammo.js@HEAD/builds/ammo.js"></script>
+  </head>
+  <body>
+    <div id="hud-bottom">
+      <div class="cam-controls">
+        <button id="btn-cam-1" class="active">1 · Vista Tiro</button>
+        <button id="btn-cam-2">2 · Cenital</button>
+        <button id="btn-cam-3">3 · Libre</button>
+      </div>
+
+      <div class="power-wrapper">
+        <span>POTENCIA</span>
+        <div class="power-bar-bg">
+          <div id="power-bar-fill"></div>
+        </div>
+      </div>
+
+      <div class="controls-hint">
+        Ratón / ← →: Apuntar · Mantener Clic / Espacio: Cargar y Tirar
+      </div>
+    </div>
+
+    <script src="./src/main.js"></script>
+  </body>
+</html>
