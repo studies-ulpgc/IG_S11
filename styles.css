@@ -7,8 +7,8 @@ body, html {
   width: 100%;
   height: 100%;
   overflow: hidden;
-  background-color: #111;
-  font-family: system-ui, -apple-system, sans-serif;
+  background-color: #dbeafe;
+  font-family: "Trebuchet MS", "Segoe UI", system-ui, sans-serif;
   user-select: none;
 }
 canvas {
@@ -19,7 +19,7 @@ canvas {
   display: none !important;
 }
 
-/* --- HUD SUPERIOR --- */
+/* --- HUD SUPERIOR ESTILO WII SPORTS --- */
 #hud-top {
   position: fixed;
   top: 16px;
@@ -35,30 +35,31 @@ canvas {
   display: flex;
   align-items: center;
   gap: 12px;
-  background: rgba(15, 20, 28, 0.85);
-  backdrop-filter: blur(8px);
-  padding: 10px 16px;
-  border-radius: 14px;
-  border: 2px solid rgba(255, 255, 255, 0.1);
-  color: #f8fafc;
-  min-width: 195px;
-  transition: all 0.25s ease;
-  opacity: 0.65;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(241, 245, 249, 0.88));
+  backdrop-filter: blur(10px);
+  padding: 10px 18px;
+  border-radius: 999px;
+  border: 2px solid rgba(148, 163, 184, 0.35);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.14), inset 0 2px 0 #ffffff;
+  color: #1e293b;
+  min-width: 205px;
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  opacity: 0.72;
 }
 
 .player-card.active {
   opacity: 1;
-  transform: translateY(2px);
+  transform: translateY(2px) scale(1.03);
 }
 
 .player-card.p1.active {
-  border-color: #3b82f6;
-  box-shadow: 0 0 20px rgba(59, 130, 246, 0.45);
+  border-color: #0ea5e9;
+  box-shadow: 0 10px 24px rgba(14, 165, 233, 0.35), inset 0 2px 0 #ffffff;
 }
 
 .player-card.p2.active {
-  border-color: #ef4444;
-  box-shadow: 0 0 20px rgba(239, 68, 68, 0.45);
+  border-color: #f43f5e;
+  box-shadow: 0 10px 24px rgba(244, 63, 94, 0.35), inset 0 2px 0 #ffffff;
 }
 
 .player-info {
@@ -71,40 +72,41 @@ canvas {
 }
 
 .player-name {
-  font-weight: 700;
+  font-weight: 800;
   font-size: 14px;
 }
-.p1 .player-name { color: #60a5fa; }
-.p2 .player-name { color: #f87171; }
+.p1 .player-name { color: #0284c7; }
+.p2 .player-name { color: #e11d48; }
 
 .player-sub {
   font-size: 11px;
-  color: #94a3b8;
+  font-weight: 600;
+  color: #64748b;
 }
 
-/* Círculo indicador de Lisas / Rayadas / Bola 8 */
 .group-badge {
-  width: 28px;
-  height: 28px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 900;
-  font-size: 12px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
+  font-size: 13px;
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
   flex-shrink: 0;
 }
 .group-badge.open {
-  background: #334155;
-  color: #cbd5e1;
+  background: #e2e8f0;
+  color: #475569;
 }
 .group-badge.solid {
   background: radial-gradient(circle at 30% 30%, #fde047, #eab308);
   color: #111;
 }
 .group-badge.stripe {
-  background: linear-gradient(180deg, #f8fafc 24%, #dc2626 25%, #dc2626 75%, #f8fafc 76%);
+  background: linear-gradient(180deg, #ffffff 24%, #dc2626 25%, #dc2626 75%, #ffffff 76%);
   color: #111;
 }
 .group-badge.eight {
@@ -113,7 +115,6 @@ canvas {
   border-color: #fbbf24;
 }
 
-/* Centro superior y desplegable */
 .hud-center {
   display: flex;
   flex-direction: column;
@@ -123,14 +124,15 @@ canvas {
 }
 
 .turn-banner {
-  background: rgba(15, 20, 28, 0.9);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  color: #f8fafc;
-  padding: 6px 16px;
+  background: linear-gradient(180deg, #ffffff, #f0f9ff);
+  border: 2px solid #bae6fd;
+  color: #0369a1;
+  padding: 6px 18px;
   border-radius: 999px;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 800;
   white-space: nowrap;
+  box-shadow: 0 6px 16px rgba(2, 132, 199, 0.16);
 }
 
 .pocketed-dropdown-wrapper {
@@ -138,32 +140,42 @@ canvas {
 }
 
 .hud-pill-btn {
-  background: rgba(30, 41, 59, 0.9);
-  color: #e2e8f0;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  padding: 5px 12px;
+  background: rgba(255, 255, 255, 0.9);
+  color: #334155;
+  border: 1.5px solid #cbd5e1;
+  padding: 6px 14px;
   border-radius: 999px;
   font-size: 12px;
+  font-weight: 700;
   cursor: pointer;
-  transition: background 0.2s;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.1);
+  transition: all 0.2s;
 }
 .hud-pill-btn:hover {
-  background: #334155;
+  background: #e0f2fe;
+  border-color: #38bdf8;
+  color: #0284c7;
+}
+
+.sound-pill {
+  height: 38px;
+  display: flex;
+  align-items: center;
 }
 
 .pocketed-panel {
   position: absolute;
-  top: 34px;
+  top: 36px;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(15, 20, 28, 0.95);
+  background: rgba(255, 255, 255, 0.96);
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 12px;
-  padding: 10px 14px;
+  border: 2px solid #bae6fd;
+  border-radius: 16px;
+  padding: 12px 16px;
   min-width: 240px;
   z-index: 30;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.18);
 }
 
 .pocketed-list {
@@ -196,7 +208,8 @@ canvas {
 }
 .empty-msg {
   font-size: 12px;
-  color: #94a3b8;
+  color: #64748b;
+  font-weight: 600;
 }
 
 /* --- BOTONES ESQUINA SUPERIOR DERECHA --- */
@@ -205,6 +218,7 @@ canvas {
   top: 16px;
   right: 18px;
   display: flex;
+  align-items: center;
   gap: 8px;
   z-index: 20;
 }
@@ -212,52 +226,95 @@ canvas {
 .icon-btn {
   width: 38px;
   height: 38px;
-  border-radius: 10px;
-  background: rgba(15, 20, 28, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  color: #f8fafc;
-  font-size: 16px;
-  font-weight: bold;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1.5px solid #cbd5e1;
+  color: #1e293b;
+  font-size: 15px;
+  font-weight: 800;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12);
   transition: all 0.2s;
 }
 .icon-btn:hover {
-  background: #2563eb;
-  border-color: #3b82f6;
+  background: #0ea5e9;
+  border-color: #0284c7;
+  color: #ffffff;
+  transform: translateY(-1px);
 }
 .icon-btn.danger:hover {
-  background: #dc2626;
-  border-color: #ef4444;
+  background: #f43f5e;
+  border-color: #e11d48;
+  color: #ffffff;
 }
 .icon-btn.help {
-  background: rgba(37, 99, 235, 0.25);
-  border-color: rgba(59, 130, 246, 0.5);
+  background: #e0f2fe;
+  border-color: #7dd3fc;
+  color: #0284c7;
 }
 
-/* --- MODALES --- */
+/* --- MODALES WII SPORTS (Intro, Pausa, Ayuda, Fin) --- */
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(5, 8, 15, 0.65);
-  backdrop-filter: blur(4px);
+  background: rgba(224, 242, 254, 0.45);
+  backdrop-filter: blur(7px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 50;
 }
 
-.modal-card {
-  background: #0f172a;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 16px;
-  padding: 22px 26px;
-  color: #f8fafc;
-  max-width: 440px;
+.wii-intro-overlay {
+  background: radial-gradient(circle at center, rgba(255, 255, 255, 0.35), rgba(186, 230, 253, 0.65));
+  backdrop-filter: blur(6px);
+}
+
+.wii-intro-box {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(240, 249, 255, 0.92));
+  border: 3px solid #ffffff;
+  border-radius: 28px;
+  padding: 30px 34px;
+  max-width: 450px;
+  width: 92%;
+  text-align: center;
+  box-shadow: 0 24px 50px rgba(2, 132, 199, 0.25), inset 0 2px 0 #ffffff;
+}
+
+.wii-logo-pill {
+  display: inline-block;
+  background: #e0f2fe;
+  color: #0284c7;
+  font-weight: 900;
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  padding: 5px 14px;
+  border-radius: 999px;
+  border: 1.5px solid #7dd3fc;
+  margin-bottom: 10px;
+}
+
+.wii-main-title {
+  font-size: 28px;
+  font-weight: 900;
+  color: #0f172a;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.modal-card.wii-card {
+  background: linear-gradient(180deg, #ffffff, #f8fafc);
+  border: 3px solid #e0f2fe;
+  border-radius: 24px;
+  padding: 24px 28px;
+  color: #0f172a;
+  max-width: 430px;
   width: 90%;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.2);
+  text-align: center;
 }
 
 .modal-header {
@@ -268,14 +325,18 @@ canvas {
 }
 
 .close-btn {
-  background: transparent;
+  background: #f1f5f9;
   border: none;
-  color: #94a3b8;
-  font-size: 18px;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  color: #64748b;
+  font-size: 15px;
   cursor: pointer;
 }
 .close-btn:hover {
-  color: #fff;
+  background: #e2e8f0;
+  color: #0f172a;
 }
 
 .help-list {
@@ -284,23 +345,21 @@ canvas {
   flex-direction: column;
   gap: 10px;
   font-size: 13px;
-  color: #cbd5e1;
+  color: #334155;
   line-height: 1.4;
+  text-align: left;
 }
 
-.gameover-card {
-  text-align: center;
-}
 .gameover-icon {
   font-size: 46px;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 .gameover-card h2 {
   font-size: 24px;
   margin-bottom: 6px;
 }
 .gameover-card p {
-  color: #cbd5e1;
+  color: #475569;
   font-size: 14px;
   margin-bottom: 20px;
 }
@@ -309,26 +368,109 @@ canvas {
   gap: 10px;
   justify-content: center;
 }
+
 .primary-btn {
-  background: #2563eb;
+  background: linear-gradient(180deg, #38bdf8, #0284c7);
   color: white;
   border: none;
-  padding: 10px 18px;
-  border-radius: 10px;
-  font-weight: 700;
+  padding: 11px 20px;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: 14px;
   cursor: pointer;
+  box-shadow: 0 6px 16px rgba(2, 132, 199, 0.35);
+  transition: transform 0.15s;
 }
-.primary-btn:hover { background: #1d4ed8; }
+.primary-btn:hover {
+  transform: scale(1.03);
+}
+
 .secondary-btn {
-  background: rgba(255, 255, 255, 0.1);
-  color: #e2e8f0;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  padding: 10px 16px;
-  border-radius: 10px;
-  font-weight: 600;
+  background: #f1f5f9;
+  color: #334155;
+  border: 1.5px solid #cbd5e1;
+  padding: 11px 18px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 14px;
   cursor: pointer;
+  transition: all 0.15s;
 }
-.secondary-btn:hover { background: rgba(255, 255, 255, 0.18); }
+.secondary-btn:hover {
+  background: #e2e8f0;
+  border-color: #94a3b8;
+}
+
+.wii-full-btn {
+  width: 100%;
+}
+
+/* --- SELECTORES DE MODO --- */
+.start-subtitle {
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 18px;
+}
+.mode-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.mode-btn, .bot-box {
+  background: #ffffff;
+  border: 2px solid #e2e8f0;
+  border-radius: 18px;
+  padding: 14px 18px;
+  color: #0f172a;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+}
+.mode-btn:hover {
+  background: #f0f9ff;
+  border-color: #38bdf8;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 18px rgba(14, 165, 233, 0.2);
+}
+.bot-box {
+  cursor: default;
+}
+.mode-title {
+  font-weight: 800;
+  font-size: 15px;
+  color: #0f172a;
+}
+.mode-desc {
+  font-size: 12px;
+  color: #64748b;
+}
+.diff-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+.diff-btn {
+  flex: 1;
+  background: #f8fafc;
+  border: 1.5px solid #cbd5e1;
+  color: #334155;
+  padding: 8px 0;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.diff-btn:hover {
+  background: #0ea5e9;
+  border-color: #0284c7;
+  color: #fff;
+}
 
 /* --- HUD INFERIOR --- */
 #hud-bottom {
@@ -338,102 +480,37 @@ canvas {
   transform: translateX(-50%);
   display: flex;
   align-items: center;
-  background: rgba(15, 20, 28, 0.85);
-  backdrop-filter: blur(8px);
-  padding: 10px 18px;
-  border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(10px);
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 2px solid rgba(148, 163, 184, 0.35);
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.14);
   z-index: 10;
 }
 
 .cam-controls {
   display: flex;
-  gap: 8px;
+  gap: 6px;
 }
 
 .cam-controls button {
-  background: rgba(255, 255, 255, 0.08);
-  color: #cbd5e1;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  padding: 6px 12px;
-  border-radius: 8px;
+  background: transparent;
+  color: #475569;
+  border: none;
+  padding: 7px 14px;
+  border-radius: 999px;
   cursor: pointer;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 800;
   transition: all 0.2s;
 }
 
 .cam-controls button:hover,
 .cam-controls button.active {
-  background: #2563eb;
+  background: #0ea5e9;
   color: #fff;
-  border-color: #3b82f6;
-}
-
-/* --- PANTALLA DE INICIO --- */
-.start-card {
-  text-align: center;
-  max-width: 420px;
-}
-.start-subtitle {
-  color: #94a3b8;
-  font-size: 13px;
-  margin-bottom: 18px;
-}
-.mode-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-.mode-btn, .bot-box {
-  background: rgba(30, 41, 59, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 12px;
-  padding: 14px 16px;
-  color: #f8fafc;
-  text-align: left;
-  cursor: pointer;
-  transition: all 0.2s;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.mode-btn:hover {
-  background: rgba(37, 99, 235, 0.3);
-  border-color: #3b82f6;
-}
-.bot-box {
-  cursor: default;
-}
-.mode-title {
-  font-weight: 700;
-  font-size: 15px;
-}
-.mode-desc {
-  font-size: 12px;
-  color: #94a3b8;
-}
-.diff-row {
-  display: flex;
-  gap: 8px;
-  margin-top: 8px;
-}
-.diff-btn {
-  flex: 1;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  color: #e2e8f0;
-  padding: 7px 0;
-  border-radius: 8px;
-  font-weight: 600;
-  font-size: 13px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-.diff-btn:hover {
-  background: #ef4444;
-  border-color: #f87171;
-  color: #fff;
+  box-shadow: 0 3px 10px rgba(14, 165, 233, 0.35);
 }
 
 /* --- BANNER ANUNCIO ESTILO WII SPORTS --- */

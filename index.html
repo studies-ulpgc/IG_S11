@@ -8,12 +8,12 @@
     <script src="https://cdn.jsdelivr.net/gh/kripken/ammo.js@HEAD/builds/ammo.js"></script>
   </head>
   <body>
-    <!-- PANTALLA DE INICIO (Selector de modo y dificultad del Bot) -->
-    <div id="start-modal" class="modal-overlay">
-      <div class="modal-card start-card">
-        <div class="gameover-icon">🎱</div>
-        <h2>Billar 3D · Bola 8</h2>
-        <p class="start-subtitle">Elige el modo de juego</p>
+    <!-- PANTALLA DE INICIO ESTILO WII SPORTS (Fondo difuminado con cámara orbitando) -->
+    <div id="start-modal" class="modal-overlay wii-intro-overlay">
+      <div class="wii-intro-box">
+        <div class="wii-logo-pill">WII SPORTS EDITION</div>
+        <h1 class="wii-main-title">BILLAR 3D · BOLA 8</h1>
+        <p class="start-subtitle">Pulsa en cualquier modo para empezar la partida</p>
 
         <div class="mode-grid">
           <button id="btn-mode-practice" class="mode-btn">
@@ -37,9 +37,23 @@
         </div>
       </div>
     </div>
+
+    <!-- MENÚ DE PAUSA (Partida congelada de fondo) -->
+    <div id="pause-modal" class="modal-overlay wii-pause-overlay hidden">
+      <div class="modal-card wii-card">
+        <div class="gameover-icon">⏸️</div>
+        <h2>Juego en Pausa</h2>
+        <p class="start-subtitle">La partida está detenida</p>
+        <div class="mode-grid">
+          <button id="btn-resume" class="primary-btn wii-full-btn">▶ Continuar partida</button>
+          <button id="btn-pause-restart" class="secondary-btn wii-full-btn">↺ Reiniciar mesa</button>
+          <button id="btn-pause-menu" class="secondary-btn wii-full-btn">🏠 Menú principal</button>
+        </div>
+      </div>
+    </div>
+
     <!-- HUD SUPERIOR -->
     <div id="hud-top">
-      <!-- Tarjeta Jugador 1 (Azul) -->
       <div id="card-p1" class="player-card p1 active">
         <div id="badge-p1" class="group-badge open" title="Grupo asignado">?</div>
         <div class="player-info">
@@ -48,16 +62,6 @@
         </div>
       </div>
 
-      <!-- BANNER CINEMÁTICO CENTRAL (Asignación de bolas, Faltas, etc.) -->
-      <div id="wii-announcement" class="wii-announcement hidden">
-        <div id="wii-ann-badge" class="wii-ann-badge"></div>
-        <div class="wii-ann-texts">
-          <span id="wii-ann-title" class="wii-ann-title">JUGADOR 1</span>
-          <span id="wii-ann-sub" class="wii-ann-sub">Juega con Lisas (1 - 7)</span>
-        </div>
-      </div>
-
-      <!-- Centro: Estado del turno + Desplegable de bolas metidas -->
       <div class="hud-center">
         <div id="turn-banner" class="turn-banner">Turno: Jugador 1</div>
 
@@ -73,7 +77,6 @@
         </div>
       </div>
 
-      <!-- Tarjeta Jugador 2 / Bot (Rojo) -->
       <div id="card-p2" class="player-card p2">
         <div class="player-info right">
           <span id="name-p2" class="player-name">Jugador 2</span>
@@ -83,47 +86,56 @@
       </div>
     </div>
 
-    <!-- BOTONES FLOTANTES SUPERIOR DERECHA (Acciones rápidas y Ayuda) -->
+    <!-- BANNER CINEMÁTICO CENTRAL -->
+    <div id="wii-announcement" class="wii-announcement hidden">
+      <div id="wii-ann-badge" class="wii-ann-badge"></div>
+      <div class="wii-ann-texts">
+        <span id="wii-ann-title" class="wii-ann-title">JUGADOR 1</span>
+        <span id="wii-ann-sub" class="wii-ann-sub">Juega con Lisas (1 - 7)</span>
+      </div>
+    </div>
+
+    <!-- BOTONES FLOTANTES SUPERIOR DERECHA -->
     <div id="hud-actions">
-      <button id="btn-menu" class="icon-btn" title="Cambiar modo de juego">☰</button>
+      <button id="btn-pause" class="icon-btn" title="Pausar (Esc)">⏸</button>
       <button id="btn-rewind" class="icon-btn hidden" title="Rebobinar último tiro (Práctica)">⏪</button>
-      <button id="btn-reset-table" class="icon-btn" title="Reiniciar mesa">↺</button>
       <button id="btn-surrender" class="icon-btn danger" title="Rendirse">🏳️</button>
-      <button id="btn-mute" class="icon-btn" title="Silenciar / Activar sonido">🔊</button>
+      <button id="btn-sound-mode" class="hud-pill-btn sound-pill" title="Cambiar modo de sonido">🎪 Espectáculo</button>
       <button id="btn-help" class="icon-btn help" title="Controles e instrucciones">?</button>
     </div>
 
     <!-- POP-UP DE AYUDA (?) -->
     <div id="help-modal" class="modal-overlay hidden">
-      <div class="modal-card">
+      <div class="modal-card wii-card">
         <div class="modal-header">
           <h3>🎱 Controles y Reglas</h3>
           <button id="btn-close-help" class="close-btn">✕</button>
         </div>
         <ul class="help-list">
           <li><strong>← / →</strong>: Apuntar el taco (mantén <strong>Shift</strong> para giro rápido).</li>
-          <li><strong>Mantener Espacio</strong>: Cargar potencia (las rayas crecen y pasan de verde a rojo).</li>
+          <li><strong>Mantener Espacio</strong>: Cargar potencia (de verde a rojo).</li>
           <li><strong>↓ (Flecha Abajo)</strong>: Frenar / reducir potencia mientras cargas.</li>
-          <li><strong>Enter</strong>: Modo Turbo (acelera el giro, la carga y el movimiento de las bolas).</li>
-          <li><strong>1 · 2 · 3</strong>: Cambiar entre Vista Tiro, Cenital 2D (H/V) y Libre 3D.</li>
+          <li><strong>Enter</strong>: Modo Turbo (acelera giro, carga y movimiento).</li>
+          <li><strong>1 · 2 · 3</strong>: Vista Tiro, Cenital 2D (H/V) y Libre 3D.</li>
+          <li><strong>Esc</strong>: Pausar partida o volver al menú principal.</li>
         </ul>
       </div>
     </div>
 
-    <!-- CARTEL DE FIN DE PARTIDA (Victoria / Bola 8 prematura) -->
+    <!-- CARTEL DE FIN DE PARTIDA -->
     <div id="gameover-modal" class="modal-overlay hidden">
-      <div class="modal-card gameover-card">
+      <div class="modal-card wii-card gameover-card">
         <div id="gameover-icon" class="gameover-icon">🏆</div>
         <h2 id="gameover-title">¡Victoria!</h2>
         <p id="gameover-reason">Jugador 1 gana la partida</p>
         <div class="gameover-buttons">
           <button id="btn-play-again" class="primary-btn">Jugar otra vez</button>
-          <button id="btn-toggle-practice" class="secondary-btn">Cambiar a Práctica</button>
+          <button id="btn-toggle-practice" class="secondary-btn">Menú principal</button>
         </div>
       </div>
     </div>
 
-    <!-- HUD INFERIOR (Solo cámaras) -->
+    <!-- HUD INFERIOR -->
     <div id="hud-bottom">
       <div class="cam-controls">
         <button id="btn-cam-1" class="active">1 · Vista Tiro</button>

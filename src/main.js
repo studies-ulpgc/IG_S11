@@ -25,7 +25,17 @@ import {
   getRemainingCount,
   surrenderGame,
 } from "./rules.js";
-import { playBallCollisionSound, playPocketSound, toggleMute } from "./audio.js";
+import {
+  initAudioSystem,
+  playBallCollisionSound,
+  playPocketSound,
+  playApplauseSound,
+  playAwwSound,
+  playVictoryFanfare,
+  startIntroMusic,
+  stopIntroMusic,
+  cycleSoundMode,
+} from "./audio.js";
 import { isBotTurn, triggerBotTurn } from "./bot.js";
 
 let scene, camera, renderer, controls;
@@ -37,6 +47,10 @@ let keysPressed = {};
 let confettiParticles = [];
 let victoryOrbitAngle = 0;
 let lastCollisionSoundTime = 0;
+
+let introOrbitAngle = 0;
+let isPaused = false;
+let lastPocketPos = new THREE.Vector3();
 
 const BALL_HEX = {
   1: "#f5b800", 2: "#1d4ed8", 3: "#dc2626", 4: "#581c87",
@@ -55,6 +69,7 @@ async function init() {
 
   camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
   camera.position.set(-6, 3.2, 0);
+  initAudioSystem(camera);
 
   renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
@@ -67,7 +82,7 @@ async function init() {
   controls.minDistance = 2;
   controls.maxDistance = 22;
 
-  scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+  scene.add(new THREE.AmbientLight(0xffffff, 0.65));
   const lampLight = new THREE.DirectionalLight(0xfff5e4, 1.2);
   lampLight.position.set(0, 10, 2);
   lampLight.castShadow = true;
@@ -100,6 +115,10 @@ function isStartModalOpen() {
 }
 
 function restartMatch(newMode = gameState.mode, newDiff = gameState.botDifficulty) {
+  stopIntroMusic();
+  isPaused = false;
+  document.getElementById("pause-modal")?.classList.add("hidden");
+
   confettiParticles.forEach((p) => scene.remove(p.mesh));
   confettiParticles = [];
   balls.forEach((b) => {
@@ -208,6 +227,51 @@ function updateHUD(customBanner = null) {
   }
 }
 
+function showWiiAnnouncement({ title, sub, type = "solid", badgeText = "" }) {
+  const el = document.getElementById("wii-announcement");
+  const badge = document.getElementById("wii-ann-badge");
+  const titleEl = document.getElementById("wii-ann-title");
+  const subEl = document.getElementById("wii-ann-sub");
+
+  el.classList.remove("hidden", "foul");
+  badge.className = "wii-ann-badge";
+
+  if (type === "foul") {
+    el.classList.add("foul");
+    badge.classList.add("foul");
+    badge.textContent = "!";
+  } else {
+    badge.classList.add(type);
+    badge.textContent = badgeText;
+  }
+
+  titleEl.textContent = title;
+  subEl.textContent = sub;
+
+  const state = { scale: 0.4, opacity: 0 };
+  new TWEEN.Tween(state)
+    .to({ scale: 1, opacity: 1 }, 420)
+    .easing(TWEEN.Easing.Elastic.Out)
+    .onUpdate(() => {
+      el.style.opacity = state.opacity;
+      el.style.transform = `translate(-50%, -50%) scale(${state.scale})`;
+    })
+    .onComplete(() => {
+      setTimeout(() => {
+        new TWEEN.Tween(state)
+          .to({ scale: 0.85, opacity: 0 }, 300)
+          .easing(TWEEN.Easing.Quadratic.In)
+          .onUpdate(() => {
+            el.style.opacity = state.opacity;
+            el.style.transform = `translate(-50%, -50%) scale(${state.scale})`;
+          })
+          .onComplete(() => el.classList.add("hidden"))
+          .start();
+      }, 1600);
+    })
+    .start();
+}
+
 function playEarlyEightAnimation(pocketPos, result) {
   controls.enabled = false;
 
@@ -246,7 +310,7 @@ function playEarlyEightAnimation(pocketPos, result) {
 }
 
 function playVictoryAnimation(result) {
-  const colors = result.winner === 1 ? [0x3b82f6, 0x60a5fa, 0xfacc15] : [0xef4444, 0xf87171, 0xfacc15];
+  const colors = result.winner === 1 ? [0x0ea5e9, 0x38bdf8, 0xfacc15] : [0xf43f5e, 0xfb7185, 0xfacc15];
   const geo = new THREE.BoxGeometry(0.12, 0.02, 0.08);
 
   for (let i = 0; i < 90; i++) {
@@ -276,7 +340,7 @@ function showGameOverModal(result, icon) {
   document.getElementById("gameover-icon").textContent = icon;
   const titleEl = document.getElementById("gameover-title");
   titleEl.textContent = `¡Gana ${winnerLabel}!`;
-  titleEl.style.color = result.winner === 1 ? "#60a5fa" : "#f87171";
+  titleEl.style.color = result.winner === 1 ? "#0284c7" : "#e11d48";
   document.getElementById("gameover-reason").textContent = reasonText;
   document.getElementById("gameover-modal").classList.remove("hidden");
 }
@@ -359,7 +423,27 @@ function setCameraMode(mode) {
 }
 
 function setupControls() {
+  const startModal = document.getElementById("start-modal");
+  if (startModal) {
+    startModal.addEventListener(
+    "pointerdown",
+    () => startIntroMusic(),
+    { once: true }
+);
+  }
+
+  const togglePause = () => {
+    if (isStartModalOpen() || gameState.gameOver) return;
+    isPaused = !isPaused;
+    document.getElementById("pause-modal")?.classList.toggle("hidden", !isPaused);
+  };
+
   window.addEventListener("keydown", (e) => {
+    if (e.code === "Escape") {
+      togglePause();
+      return;
+    }
+    if (isPaused) return;
     keysPressed[e.code] = true;
 
     if (
@@ -387,6 +471,39 @@ function setupControls() {
     }
   });
 
+  // Pausa
+  document.getElementById("btn-pause")?.addEventListener("click", togglePause);
+  document.getElementById("btn-resume")?.addEventListener("click", () => {
+    isPaused = false;
+    document.getElementById("pause-modal")?.classList.add("hidden");
+  });
+  document.getElementById("btn-pause-restart")?.addEventListener("click", () => {
+    restartMatch(gameState.mode, gameState.botDifficulty);
+  });
+  document.getElementById("btn-pause-menu")?.addEventListener("click", () => {
+    isPaused = false;
+    document.getElementById("pause-modal")?.classList.add("hidden");
+    startModal?.classList.remove("hidden");
+    startIntroMusic();
+  });
+
+  // Selector de 3 modos de audio
+  const btnSoundMode = document.getElementById("btn-sound-mode");
+  if (btnSoundMode) {
+    btnSoundMode.addEventListener("click", () => {
+      const mode = cycleSoundMode();
+      if (mode === "show") {
+        btnSoundMode.textContent = "🎪 Espectáculo";
+        if (isStartModalOpen()) startIntroMusic();
+      } else if (mode === "table") {
+        btnSoundMode.textContent = "🎱 Solo Mesa";
+      } else {
+        btnSoundMode.textContent = "🔇 Mute";
+      }
+    });
+  }
+
+  // Cámaras
   document.getElementById("btn-cam-1").addEventListener("click", () => setCameraMode(1));
   document.getElementById("btn-cam-2").addEventListener("click", () => setCameraMode(2));
   document.getElementById("btn-cenital-rot").addEventListener("click", () => {
@@ -395,10 +512,10 @@ function setupControls() {
   });
   document.getElementById("btn-cam-3").addEventListener("click", () => setCameraMode(3));
 
+  // Desplegable y ayuda
   document.getElementById("btn-pocketed-toggle").addEventListener("click", () => {
     document.getElementById("pocketed-panel").classList.toggle("hidden");
   });
-
   document.getElementById("btn-help").addEventListener("click", () => {
     document.getElementById("help-modal").classList.remove("hidden");
   });
@@ -406,46 +523,21 @@ function setupControls() {
     document.getElementById("help-modal").classList.add("hidden");
   });
 
-  // Botón de silenciar / activar audio
-  const btnMute = document.getElementById("btn-mute");
-  if (btnMute) {
-    btnMute.addEventListener("click", () => {
-      const muted = toggleMute();
-      btnMute.textContent = muted ? "🔇" : "🔊";
-    });
-  }
-
-  // Botón opcional para volver al menú de selección de modo
-  const btnMenu = document.getElementById("btn-menu");
-  const startModal = document.getElementById("start-modal");
-  if (btnMenu && startModal) {
-    btnMenu.addEventListener("click", () => {
-      startModal.classList.remove("hidden");
-    });
-  }
-
   // Selector de modo en la pantalla de inicio
-  const btnPractice = document.getElementById("btn-mode-practice");
-  if (btnPractice) {
-    btnPractice.addEventListener("click", () => restartMatch("practice"));
-  }
-  const btnPvp = document.getElementById("btn-mode-pvp");
-  if (btnPvp) {
-    btnPvp.addEventListener("click", () => restartMatch("pvp"));
-  }
+  document.getElementById("btn-mode-practice")?.addEventListener("click", () => restartMatch("practice"));
+  document.getElementById("btn-mode-pvp")?.addEventListener("click", () => restartMatch("pvp"));
   document.querySelectorAll(".diff-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
       restartMatch("bot", btn.dataset.diff);
     });
   });
 
-  // Rebobinar en práctica, Reiniciar y Rendirse
+  // Rebobinar en práctica y Rendirse
   document.getElementById("btn-rewind").addEventListener("click", () => {
     if (areAllBallsStopped() && rewindLastShot()) {
       updateHUD("Tiro rebobinado ⏪");
     }
   });
-  document.getElementById("btn-reset-table").addEventListener("click", () => restartMatch(gameState.mode, gameState.botDifficulty));
   document.getElementById("btn-surrender").addEventListener("click", () => {
     if (isBotTurn()) return;
     const res = surrenderGame();
@@ -461,6 +553,7 @@ function setupControls() {
     if (startModal) {
       document.getElementById("gameover-modal").classList.add("hidden");
       startModal.classList.remove("hidden");
+      startIntroMusic();
     } else {
       restartMatch("practice");
     }
@@ -512,7 +605,6 @@ function checkBallCollisionsAudio() {
 
       const dist = b1.position.distanceTo(b2.position);
       if (dist <= threshold) {
-        // Registrar la primera bola que toca la blanca en este tiro
         if (b1 === cueBall) registerFirstBallHit(b2.userData.ballInfo.number);
         else if (b2 === cueBall) registerFirstBallHit(b1.userData.ballInfo.number);
 
@@ -557,8 +649,6 @@ function checkOutOfBounds() {
     }
   });
 }
-
-let lastPocketPos = new THREE.Vector3();
 
 function checkPockets() {
   balls.forEach((ball) => {
@@ -628,13 +718,27 @@ function animate() {
   requestAnimationFrame(animate);
   const rawDt = Math.min(clock.getDelta(), 0.05);
 
+  // 1. Intro Wii Sports: cámara orbitando suavemente alrededor de la mesa
+  if (isStartModalOpen()) {
+    introOrbitAngle += rawDt * 0.22;
+    camera.position.set(Math.cos(introOrbitAngle) * 9.5, 5.2, Math.sin(introOrbitAngle) * 9.5);
+    camera.lookAt(0, 0, 0);
+    renderer.render(scene, camera);
+    return;
+  }
+
+  // 2. Pausa: partida congelada de fondo
+  if (isPaused) {
+    renderer.render(scene, camera);
+    return;
+  }
+
   const isTurbo = !!keysPressed["Enter"];
   const dt = isTurbo ? rawDt * 2.5 : rawDt;
-
   const stopped = areAllBallsStopped();
 
-  // Giro de apuntado (bloqueado si es turno del Bot o está el menú inicial)
-  if (!isShooting && !gameState.gameOver && !isBotTurn() && !isStartModalOpen()) {
+  // Giro de apuntado
+  if (!isShooting && !gameState.gameOver && !isBotTurn()) {
     const turnSpeed = keysPressed["ShiftLeft"] || keysPressed["ShiftRight"] ? 2.4 : 1.1;
     if (keysPressed["ArrowLeft"]) setAimAngle(aimAngle - turnSpeed * dt);
     if (keysPressed["ArrowRight"]) setAimAngle(aimAngle + turnSpeed * dt);
@@ -670,6 +774,7 @@ function animate() {
     const result = evaluateTurnEnd(findFreeSpot);
     if (result) {
       updateHUD(result.message || result.reason);
+
       if (result.event === "assigned") {
         const isBot = gameState.mode === "bot" && result.player === 2;
         const pName = isBot ? "BOT IA" : `JUGADOR ${result.player}`;
@@ -680,16 +785,24 @@ function animate() {
           type: isSolid ? "solid" : "stripe",
           badgeText: isSolid ? "1" : "9",
         });
+        playApplauseSound();
+      } else if (result.event === "keep_turn") {
+        playApplauseSound();
       } else if (result.event === "foul") {
         showWiiAnnouncement({
           title: result.foulTitle,
           sub: result.foulSub,
           type: "foul",
         });
-      }
-      if (result.event === "early_eight_loss") {
+        playAwwSound();
+      } else if (result.event === "switch_turn") {
+        playAwwSound();
+      } else if (result.event === "early_eight_loss") {
+        playAwwSound();
         playEarlyEightAnimation(lastPocketPos, result);
       } else if (result.event === "win") {
+        playVictoryFanfare();
+        playApplauseSound();
         playVictoryAnimation(result);
       }
     }
@@ -701,8 +814,8 @@ function animate() {
     wasMoving = true;
   }
 
-  // Si es turno del Bot y las bolas están quietas, ejecuta su jugada
-  if (stopped && !isShooting && !gameState.gameOver && isBotTurn() && !isStartModalOpen()) {
+  // Turno del Bot
+  if (stopped && !isShooting && !gameState.gameOver && isBotTurn()) {
     triggerBotTurn((msg) => updateHUD(msg));
   }
 
@@ -734,51 +847,6 @@ function animate() {
 
   if (controls.enabled) controls.update();
   renderer.render(scene, camera);
-}
-
-function showWiiAnnouncement({ title, sub, type = "solid", badgeText = "" }) {
-  const el = document.getElementById("wii-announcement");
-  const badge = document.getElementById("wii-ann-badge");
-  const titleEl = document.getElementById("wii-ann-title");
-  const subEl = document.getElementById("wii-ann-sub");
-
-  el.classList.remove("hidden", "foul");
-  badge.className = "wii-ann-badge";
-
-  if (type === "foul") {
-    el.classList.add("foul");
-    badge.classList.add("foul");
-    badge.textContent = "!";
-  } else {
-    badge.classList.add(type);
-    badge.textContent = badgeText;
-  }
-
-  titleEl.textContent = title;
-  subEl.textContent = sub;
-
-  const state = { scale: 0.4, opacity: 0 };
-  new TWEEN.Tween(state)
-    .to({ scale: 1, opacity: 1 }, 420)
-    .easing(TWEEN.Easing.Elastic.Out)
-    .onUpdate(() => {
-      el.style.opacity = state.opacity;
-      el.style.transform = `translate(-50%, -50%) scale(${state.scale})`;
-    })
-    .onComplete(() => {
-      setTimeout(() => {
-        new TWEEN.Tween(state)
-          .to({ scale: 0.85, opacity: 0 }, 300)
-          .easing(TWEEN.Easing.Quadratic.In)
-          .onUpdate(() => {
-            el.style.opacity = state.opacity;
-            el.style.transform = `translate(-50%, -50%) scale(${state.scale})`;
-          })
-          .onComplete(() => el.classList.add("hidden"))
-          .start();
-      }, 1600);
-    })
-    .start();
 }
 
 init();

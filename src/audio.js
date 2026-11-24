@@ -1,79 +1,404 @@
-let audioCtx = null;
-export let isMuted = false;
+import * as THREE from "three";
 
-function ensureContext() {
-  if (!audioCtx) {
-    const AudioContext = window.AudioContext || window.webkitAudioContext;
-    audioCtx = new AudioContext();
-  }
-  if (audioCtx.state === "suspended") {
-    audioCtx.resume();
+// Importamos los audios para que Parcel pueda empaquetarlos.
+import introUrl from "./sounds/intro.mp3";
+import applauseUrl from "./sounds/applause.mp3";
+import awwUrl from "./sounds/aww.mp3";
+import winUrl from "./sounds/win.mp3";
+
+export let soundMode = "show";
+
+let listener = null;
+let bgMusic = null;
+let audioContext = null;
+let audioUnlocked = false;
+let introRequested = false;
+let introBuffer = null;
+
+const soundBuffers = Object.create(null);
+
+const SOUND_FILES = {
+  intro: introUrl,
+  applause: applauseUrl,
+  aww: awwUrl,
+  win: winUrl,
+};
+
+function unlockAudio() {
+  if (!audioContext) return;
+
+  audioUnlocked = true;
+
+  if (audioContext.state === "suspended") {
+    audioContext.resume()
+      .then(() => {
+        if (introRequested) playIntroIfReady();
+      })
+      .catch((error) => {
+        console.warn("No se pudo activar el audio:", error);
+      });
+  } else if (introRequested) {
+    playIntroIfReady();
   }
 }
 
-export function toggleMute() {
-  isMuted = !isMuted;
-  return isMuted;
+function playIntroIfReady() {
+  if (
+    !audioUnlocked ||
+    soundMode !== "show" ||
+    !bgMusic ||
+    !introBuffer ||
+    !audioContext ||
+    audioContext.state !== "running"
+  ) {
+    return;
+  }
+
+  if (!bgMusic.isPlaying) {
+    bgMusic.setBuffer(introBuffer);
+    bgMusic.setLoop(true);
+    bgMusic.setVolume(0.35);
+    bgMusic.play();
+  }
 }
 
-// Golpe del taco sobre la blanca
+export function initAudioSystem(camera) {
+  if (listener) return;
+
+  listener = new THREE.AudioListener();
+  camera.add(listener);
+
+  // Todos los sonidos comparten el mismo contexto.
+  audioContext = listener.context;
+  bgMusic = new THREE.Audio(listener);
+
+  // Activación del audio mediante interacción del usuario.
+  document.addEventListener("pointerdown", unlockAudio, true);
+  document.addEventListener("keydown", unlockAudio, true);
+  document.addEventListener("touchend", unlockAudio, true);
+
+  const loader = new THREE.AudioLoader();
+
+  Object.entries(SOUND_FILES).forEach(([key, url]) => {
+    loader.load(
+      url,
+      (buffer) => {
+        soundBuffers[key] = buffer;
+
+        if (key === "intro") {
+          introBuffer = buffer;
+          playIntroIfReady();
+        }
+      },
+      undefined,
+      (error) => {
+        console.error(
+          `No se pudo cargar el sonido "${key}" (${url}).`,
+          error
+        );
+      }
+    );
+  });
+}
+
+export function cycleSoundMode() {
+  if (soundMode === "show") {
+    soundMode = "table";
+  } else if (soundMode === "table") {
+    soundMode = "mute";
+  } else {
+    soundMode = "show";
+  }
+
+  if (soundMode !== "show") {
+    stopIntroMusic();
+  }
+
+  return soundMode;
+}
+
+export function startIntroMusic() {
+  introRequested = true;
+  playIntroIfReady();
+}
+
+export function stopIntroMusic() {
+  introRequested = false;
+
+  if (bgMusic && bgMusic.isPlaying) {
+    bgMusic.stop();
+  }
+}
+
+function playBufferIfAvailable(key, volume = 0.7) {
+  if (
+    !listener ||
+    !audioUnlocked ||
+    !soundBuffers[key] ||
+    !audioContext ||
+    audioContext.state !== "running"
+  ) {
+    return false;
+  }
+
+  const sound = new THREE.Audio(listener);
+  sound.setBuffer(soundBuffers[key]);
+  sound.setVolume(volume);
+  sound.play();
+
+  return true;
+}
+
+function getReadyContext() {
+  if (
+    !audioUnlocked ||
+    !audioContext ||
+    audioContext.state !== "running"
+  ) {
+    return null;
+  }
+
+  return audioContext;
+}
+
+// ==========================================
+// SONIDOS DE MESA
+// ==========================================
+
 export function playCueHitSound(power = 0.5) {
-  if (isMuted) return;
-  ensureContext();
+  if (soundMode === "mute") return;
 
-  const osc = audioCtx.createOscillator();
-  const gain = audioCtx.createGain();
+  const ctx = getReadyContext();
+  if (!ctx) return;
+
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+
   osc.type = "triangle";
-  osc.frequency.setValueAtTime(160 + power * 90, audioCtx.currentTime);
-  osc.frequency.exponentialRampToValueAtTime(45, audioCtx.currentTime + 0.08);
+  osc.frequency.setValueAtTime(
+    160 + power * 90,
+    ctx.currentTime
+  );
+  osc.frequency.exponentialRampToValueAtTime(
+    45,
+    ctx.currentTime + 0.08
+  );
 
-  gain.gain.setValueAtTime(Math.min(0.6, 0.15 + power * 0.45), audioCtx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.08);
+  gain.gain.setValueAtTime(
+    Math.min(0.6, 0.15 + power * 0.45),
+    ctx.currentTime
+  );
+  gain.gain.exponentialRampToValueAtTime(
+    0.001,
+    ctx.currentTime + 0.08
+  );
 
   osc.connect(gain);
-  gain.connect(audioCtx.destination);
+  gain.connect(ctx.destination);
+
   osc.start();
-  osc.stop(audioCtx.currentTime + 0.09);
+  osc.stop(ctx.currentTime + 0.09);
 }
 
-// Choque entre bolas (volumen según velocidad relativa)
 export function playBallCollisionSound(intensity = 0.5) {
-  if (isMuted || intensity < 0.05) return;
-  ensureContext();
+  if (soundMode === "mute" || intensity < 0.05) return;
 
-  const vol = Math.min(0.7, intensity * 0.55);
-  const osc = audioCtx.createOscillator();
-  const gain = audioCtx.createGain();
+  const ctx = getReadyContext();
+  if (!ctx) return;
+
+  const volume = Math.min(0.7, intensity * 0.55);
+
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
 
   osc.type = "sine";
-  osc.frequency.setValueAtTime(950 + Math.random() * 180, audioCtx.currentTime);
-  osc.frequency.exponentialRampToValueAtTime(280, audioCtx.currentTime + 0.045);
+  osc.frequency.setValueAtTime(
+    950 + Math.random() * 180,
+    ctx.currentTime
+  );
+  osc.frequency.exponentialRampToValueAtTime(
+    280,
+    ctx.currentTime + 0.045
+  );
 
-  gain.gain.setValueAtTime(vol, audioCtx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.045);
+  gain.gain.setValueAtTime(volume, ctx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(
+    0.001,
+    ctx.currentTime + 0.045
+  );
 
   osc.connect(gain);
-  gain.connect(audioCtx.destination);
+  gain.connect(ctx.destination);
+
   osc.start();
-  osc.stop(audioCtx.currentTime + 0.05);
+  osc.stop(ctx.currentTime + 0.05);
 }
 
-// Caída en tronera
 export function playPocketSound() {
-  if (isMuted) return;
-  ensureContext();
+  if (soundMode === "mute") return;
 
-  const osc = audioCtx.createOscillator();
-  const gain = audioCtx.createGain();
+  const ctx = getReadyContext();
+  if (!ctx) return;
+
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+
   osc.type = "sine";
-  osc.frequency.setValueAtTime(140, audioCtx.currentTime);
-  osc.frequency.exponentialRampToValueAtTime(52, audioCtx.currentTime + 0.22);
+  osc.frequency.setValueAtTime(140, ctx.currentTime);
+  osc.frequency.exponentialRampToValueAtTime(
+    52,
+    ctx.currentTime + 0.22
+  );
 
-  gain.gain.setValueAtTime(0.45, audioCtx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.22);
+  gain.gain.setValueAtTime(0.45, ctx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(
+    0.001,
+    ctx.currentTime + 0.22
+  );
 
   osc.connect(gain);
-  gain.connect(audioCtx.destination);
+  gain.connect(ctx.destination);
+
   osc.start();
-  osc.stop(audioCtx.currentTime + 0.24);
+  osc.stop(ctx.currentTime + 0.24);
+}
+
+// ==========================================
+// SONIDOS DE ESPECTÁCULO
+// ==========================================
+
+export function playApplauseSound() {
+  if (soundMode !== "show") return;
+
+  if (playBufferIfAvailable("applause", 0.65)) {
+    return;
+  }
+
+  const ctx = getReadyContext();
+  if (!ctx) return;
+
+  const duration = 1.4;
+  const bufferSize = Math.floor(ctx.sampleRate * duration);
+
+  const noiseBuffer = ctx.createBuffer(
+    1,
+    bufferSize,
+    ctx.sampleRate
+  );
+
+  const output = noiseBuffer.getChannelData(0);
+
+  for (let i = 0; i < bufferSize; i++) {
+    const envelope = Math.sin(
+      (i / bufferSize) * Math.PI
+    );
+
+    output[i] =
+      (Math.random() * 2 - 1) *
+      envelope *
+      (0.6 + 0.4 * Math.sin(i * 0.004));
+  }
+
+  const source = ctx.createBufferSource();
+  source.buffer = noiseBuffer;
+
+  const filter = ctx.createBiquadFilter();
+  filter.type = "bandpass";
+  filter.frequency.value = 1100;
+  filter.Q.value = 0.7;
+
+  const gain = ctx.createGain();
+
+  gain.gain.setValueAtTime(0.28, ctx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(
+    0.01,
+    ctx.currentTime + duration
+  );
+
+  source.connect(filter);
+  filter.connect(gain);
+  gain.connect(ctx.destination);
+
+  source.start();
+}
+
+export function playAwwSound() {
+  if (soundMode !== "show") return;
+
+  if (playBufferIfAvailable("aww", 0.6)) {
+    return;
+  }
+
+  const ctx = getReadyContext();
+  if (!ctx) return;
+
+  const frequencies = [330, 277, 220];
+
+  frequencies.forEach((frequency) => {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = "triangle";
+
+    osc.frequency.setValueAtTime(
+      frequency,
+      ctx.currentTime
+    );
+
+    osc.frequency.linearRampToValueAtTime(
+      frequency * 0.74,
+      ctx.currentTime + 0.75
+    );
+
+    gain.gain.setValueAtTime(0.08, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(
+      0.001,
+      ctx.currentTime + 0.8
+    );
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.start();
+    osc.stop(ctx.currentTime + 0.82);
+  });
+}
+
+export function playVictoryFanfare() {
+  if (soundMode !== "show") return;
+
+  if (playBufferIfAvailable("win", 0.8)) {
+    return;
+  }
+
+  const ctx = getReadyContext();
+  if (!ctx) return;
+
+  const notes = [523.25, 659.25, 783.99, 1046.5];
+
+  notes.forEach((frequency, index) => {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    const startTime =
+      ctx.currentTime + index * 0.11;
+
+    osc.type = "triangle";
+    osc.frequency.setValueAtTime(
+      frequency,
+      startTime
+    );
+
+    gain.gain.setValueAtTime(0.2, startTime);
+    gain.gain.exponentialRampToValueAtTime(
+      0.001,
+      startTime + 0.55
+    );
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.start(startTime);
+    osc.stop(startTime + 0.58);
+  });
 }
