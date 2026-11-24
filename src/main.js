@@ -24,6 +24,8 @@ import {
   getRemainingCount,
   surrenderGame,
 } from "./rules.js";
+import { playBallCollisionSound, playPocketSound, toggleMute } from "./audio.js";
+import { isBotTurn, triggerBotTurn } from "./bot.js";
 
 let scene, camera, renderer, controls;
 const clock = new THREE.Clock();
@@ -33,10 +35,17 @@ let wasMoving = false;
 let keysPressed = {};
 let confettiParticles = [];
 let victoryOrbitAngle = 0;
+let lastCollisionSoundTime = 0;
 
 const BALL_HEX = {
   1: "#f5b800", 2: "#1d4ed8", 3: "#dc2626", 4: "#581c87",
   5: "#f97316", 6: "#15803d", 7: "#7f1d1d", 8: "#111111",
+};
+
+const DIFF_LABELS = {
+  easy: "Fácil",
+  medium: "Medio",
+  hard: "Difícil",
 };
 
 async function init() {
@@ -84,8 +93,12 @@ async function init() {
   animate();
 }
 
-function restartMatch(newMode = gameState.mode) {
-  // Limpiar confeti y bolas antiguas (3D + cuerpo físico en Ammo.js)
+function isStartModalOpen() {
+  const modal = document.getElementById("start-modal");
+  return modal && !modal.classList.contains("hidden");
+}
+
+function restartMatch(newMode = gameState.mode, newDiff = gameState.botDifficulty) {
   confettiParticles.forEach((p) => scene.remove(p.mesh));
   confettiParticles = [];
   balls.forEach((b) => {
@@ -94,12 +107,15 @@ function restartMatch(newMode = gameState.mode) {
   });
 
   wasMoving = false;
-  resetGameState(newMode);
+  resetGameState(newMode, newDiff);
   spawnBalls(scene);
   saveTurnSnapshot();
   setAimAngle(0);
 
   document.getElementById("gameover-modal").classList.add("hidden");
+  const startModal = document.getElementById("start-modal");
+  if (startModal) startModal.classList.add("hidden");
+
   updateHUD(
     newMode === "practice"
       ? "Modo Práctica libre"
@@ -110,6 +126,7 @@ function restartMatch(newMode = gameState.mode) {
 
 function updateHUD(customBanner = null) {
   const isPractice = gameState.mode === "practice";
+  const isBot = gameState.mode === "bot";
 
   document.getElementById("card-p2").classList.toggle("hidden", isPractice);
   document.getElementById("btn-rewind").classList.toggle("hidden", !isPractice);
@@ -121,6 +138,12 @@ function updateHUD(customBanner = null) {
   p2Card.classList.toggle("active", !isPractice && gameState.turn === 2);
 
   document.getElementById("name-p1").textContent = isPractice ? "Práctica" : "Jugador 1";
+  const nameP2 = document.getElementById("name-p2");
+  if (nameP2) {
+    nameP2.textContent = isBot
+      ? `Bot (${DIFF_LABELS[gameState.botDifficulty] || "Medio"})`
+      : "Jugador 2";
+  }
 
   const updatePlayerBadge = (player) => {
     const badge = document.getElementById(`badge-p${player}`);
@@ -159,10 +182,13 @@ function updateHUD(customBanner = null) {
   if (!isPractice) updatePlayerBadge(2);
 
   if (customBanner) {
-    document.getElementById("turn-banner").textContent = customBanner;
+    let bannerText = customBanner;
+    if (isBot) {
+      bannerText = bannerText.replace("Jugador 2", "Bot");
+    }
+    document.getElementById("turn-banner").textContent = bannerText;
   }
 
-  // Actualizar desplegable de bolas metidas
   document.getElementById("pocketed-count").textContent = gameState.allPocketed.length;
   const listEl = document.getElementById("pocketed-list");
   if (gameState.allPocketed.length === 0) {
@@ -181,11 +207,9 @@ function updateHUD(customBanner = null) {
   }
 }
 
-// --- ANIMACIÓN DE DERROTA POR BOLA 8 PREMATURA ---
 function playEarlyEightAnimation(pocketPos, result) {
   controls.enabled = false;
 
-  // Onda expansiva roja en la tronera
   const ringGeo = new THREE.RingGeometry(0.15, 0.28, 32);
   ringGeo.rotateX(-Math.PI / 2);
   const ringMat = new THREE.MeshBasicMaterial({
@@ -207,7 +231,6 @@ function playEarlyEightAnimation(pocketPos, result) {
     .onComplete(() => scene.remove(ring))
     .start();
 
-  // Zoom rápido y sacudida dramática hacia la tronera
   const camTarget = new THREE.Vector3(pocketPos.x * 0.6, 3.2, pocketPos.z * 0.6 + 2.6);
   new TWEEN.Tween(camera.position)
     .to({ x: camTarget.x, y: camTarget.y, z: camTarget.z }, 500)
@@ -221,7 +244,6 @@ function playEarlyEightAnimation(pocketPos, result) {
     .start();
 }
 
-// --- ANIMACIÓN DE VICTORIA (CONFETI 3D Y ÓRBITA) ---
 function playVictoryAnimation(result) {
   const colors = result.winner === 1 ? [0x3b82f6, 0x60a5fa, 0xfacc15] : [0xef4444, 0xf87171, 0xfacc15];
   const geo = new THREE.BoxGeometry(0.12, 0.02, 0.08);
@@ -246,11 +268,15 @@ function playVictoryAnimation(result) {
 }
 
 function showGameOverModal(result, icon) {
+  const isBot = gameState.mode === "bot";
+  const winnerLabel = result.winner === 2 && isBot ? "el Bot" : `Jugador ${result.winner}`;
+  const reasonText = isBot ? result.reason.replace("Jugador 2", "el Bot") : result.reason;
+
   document.getElementById("gameover-icon").textContent = icon;
   const titleEl = document.getElementById("gameover-title");
-  titleEl.textContent = `¡Gana Jugador ${result.winner}!`;
+  titleEl.textContent = `¡Gana ${winnerLabel}!`;
   titleEl.style.color = result.winner === 1 ? "#60a5fa" : "#f87171";
-  document.getElementById("gameover-reason").textContent = result.reason;
+  document.getElementById("gameover-reason").textContent = reasonText;
   document.getElementById("gameover-modal").classList.remove("hidden");
 }
 
@@ -335,7 +361,15 @@ function setupControls() {
   window.addEventListener("keydown", (e) => {
     keysPressed[e.code] = true;
 
-    if (e.code === "Space" && areAllBallsStopped() && !isCharging && !isShooting && !gameState.gameOver) {
+    if (
+      e.code === "Space" &&
+      areAllBallsStopped() &&
+      !isCharging &&
+      !isShooting &&
+      !gameState.gameOver &&
+      !isBotTurn() &&
+      !isStartModalOpen()
+    ) {
       e.preventDefault();
       saveTurnSnapshot();
       startCharge();
@@ -347,7 +381,7 @@ function setupControls() {
 
   window.addEventListener("keyup", (e) => {
     keysPressed[e.code] = false;
-    if (e.code === "Space" && isCharging) {
+    if (e.code === "Space" && isCharging && !isBotTurn()) {
       releaseShot();
     }
   });
@@ -360,17 +394,48 @@ function setupControls() {
   });
   document.getElementById("btn-cam-3").addEventListener("click", () => setCameraMode(3));
 
-  // Desplegable de bolas metidas
   document.getElementById("btn-pocketed-toggle").addEventListener("click", () => {
     document.getElementById("pocketed-panel").classList.toggle("hidden");
   });
 
-  // Pop-up de Ayuda (?)
   document.getElementById("btn-help").addEventListener("click", () => {
     document.getElementById("help-modal").classList.remove("hidden");
   });
   document.getElementById("btn-close-help").addEventListener("click", () => {
     document.getElementById("help-modal").classList.add("hidden");
+  });
+
+  // Botón de silenciar / activar audio
+  const btnMute = document.getElementById("btn-mute");
+  if (btnMute) {
+    btnMute.addEventListener("click", () => {
+      const muted = toggleMute();
+      btnMute.textContent = muted ? "🔇" : "🔊";
+    });
+  }
+
+  // Botón opcional para volver al menú de selección de modo
+  const btnMenu = document.getElementById("btn-menu");
+  const startModal = document.getElementById("start-modal");
+  if (btnMenu && startModal) {
+    btnMenu.addEventListener("click", () => {
+      startModal.classList.remove("hidden");
+    });
+  }
+
+  // Selector de modo en la pantalla de inicio
+  const btnPractice = document.getElementById("btn-mode-practice");
+  if (btnPractice) {
+    btnPractice.addEventListener("click", () => restartMatch("practice"));
+  }
+  const btnPvp = document.getElementById("btn-mode-pvp");
+  if (btnPvp) {
+    btnPvp.addEventListener("click", () => restartMatch("pvp"));
+  }
+  document.querySelectorAll(".diff-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      restartMatch("bot", btn.dataset.diff);
+    });
   });
 
   // Rebobinar en práctica, Reiniciar y Rendirse
@@ -379,8 +444,9 @@ function setupControls() {
       updateHUD("Tiro rebobinado ⏪");
     }
   });
-  document.getElementById("btn-reset-table").addEventListener("click", () => restartMatch(gameState.mode));
+  document.getElementById("btn-reset-table").addEventListener("click", () => restartMatch(gameState.mode, gameState.botDifficulty));
   document.getElementById("btn-surrender").addEventListener("click", () => {
+    if (isBotTurn()) return;
     const res = surrenderGame();
     if (res) {
       updateHUD(res.reason);
@@ -389,8 +455,15 @@ function setupControls() {
   });
 
   // Botones del modal de fin de partida
-  document.getElementById("btn-play-again").addEventListener("click", () => restartMatch("pvp"));
-  document.getElementById("btn-toggle-practice").addEventListener("click", () => restartMatch("practice"));
+  document.getElementById("btn-play-again").addEventListener("click", () => restartMatch(gameState.mode, gameState.botDifficulty));
+  document.getElementById("btn-toggle-practice").addEventListener("click", () => {
+    if (startModal) {
+      document.getElementById("gameover-modal").classList.add("hidden");
+      startModal.classList.remove("hidden");
+    } else {
+      restartMatch("practice");
+    }
+  });
 }
 
 function areAllBallsStopped() {
@@ -423,6 +496,33 @@ function findFreeSpot(preferredX = -2.5, preferredZ = 0) {
     }
   }
   return new THREE.Vector3(0, BALL_RADIUS, 0);
+}
+
+function checkBallCollisionsAudio() {
+  const now = performance.now();
+  if (now - lastCollisionSoundTime < 45) return;
+
+  const threshold = BALL_RADIUS * 2.08;
+  for (let i = 0; i < balls.length; i++) {
+    const b1 = balls[i];
+    if (b1.userData.ballInfo.pocketed) continue;
+    for (let j = i + 1; j < balls.length; j++) {
+      const b2 = balls[j];
+      if (b2.userData.ballInfo.pocketed) continue;
+
+      const dist = b1.position.distanceTo(b2.position);
+      if (dist <= threshold) {
+        const v1 = b1.userData.physicsBody.getLinearVelocity();
+        const v2 = b2.userData.physicsBody.getLinearVelocity();
+        const relSpeed = Math.hypot(v1.x() - v2.x(), v1.z() - v2.z());
+        if (relSpeed > 0.35) {
+          playBallCollisionSound(Math.min(1, relSpeed / 5));
+          lastCollisionSoundTime = now;
+          return;
+        }
+      }
+    }
+  }
 }
 
 function checkOutOfBounds() {
@@ -465,6 +565,7 @@ function checkPockets() {
         ball.userData.ballInfo.pocketed = true;
         lastPocketPos.copy(pocket);
         registerBallPocketed(ball);
+        playPocketSound();
 
         const body = ball.userData.physicsBody;
         const t = new AmmoLib.btTransform();
@@ -522,23 +623,23 @@ function animate() {
   requestAnimationFrame(animate);
   const rawDt = Math.min(clock.getDelta(), 0.05);
 
-  // Enter acelera TODO en cualquier momento (giro, carga de potencia y física)
   const isTurbo = !!keysPressed["Enter"];
   const dt = isTurbo ? rawDt * 2.5 : rawDt;
 
   const stopped = areAllBallsStopped();
 
-  // Giro de apuntado (funciona tanto parado como siguiendo la bola)
-  if (!isShooting && !gameState.gameOver) {
+  // Giro de apuntado (bloqueado si es turno del Bot o está el menú inicial)
+  if (!isShooting && !gameState.gameOver && !isBotTurn() && !isStartModalOpen()) {
     const turnSpeed = keysPressed["ShiftLeft"] || keysPressed["ShiftRight"] ? 2.4 : 1.1;
     if (keysPressed["ArrowLeft"]) setAimAngle(aimAngle - turnSpeed * dt);
     if (keysPressed["ArrowRight"]) setAimAngle(aimAngle + turnSpeed * dt);
   }
 
-  // Simulación física (4 pasos si mantienes Enter mientras ruedan)
+  // Simulación física
   const simSteps = !stopped && isTurbo ? 4 : 1;
   for (let s = 0; s < simSteps; s++) {
     updatePhysics(rawDt);
+    checkBallCollisionsAudio();
     checkPockets();
     checkOutOfBounds();
 
@@ -576,6 +677,11 @@ function animate() {
     }
   } else if (!stopped) {
     wasMoving = true;
+  }
+
+  // Si es turno del Bot y las bolas están quietas, ejecuta su jugada
+  if (stopped && !isShooting && !gameState.gameOver && isBotTurn() && !isStartModalOpen()) {
+    triggerBotTurn((msg) => updateHUD(msg));
   }
 
   if (stopped && !isShooting && !gameState.gameOver) {

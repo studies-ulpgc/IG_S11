@@ -94,7 +94,7 @@ function resetAimLineStyle() {
   dashMat.color.copy(colorWhite);
 }
 
-export function updateCue(dt, allBallsStopped) {
+export function updateCue(dt, allBallsStopped, isBraking = false) {
   if (!cueGroup || !cueBall) return;
 
   const canAim = allBallsStopped && !cueBall.userData.ballInfo.pocketed;
@@ -125,7 +125,8 @@ export function updateCue(dt, allBallsStopped) {
   }
 
   if (isCharging && !isShooting) {
-    power = THREE.MathUtils.clamp(power + dt * 0.85, 0.02, 1);
+    const rate = isBraking ? -0.95 : 0.85;
+    power = THREE.MathUtils.clamp(power + dt * rate, 0.02, 1);
     cueMesh.position.x = -(BALL_RADIUS + 0.12 + power * 0.9);
 
     if (power < 0.5) {
@@ -167,11 +168,10 @@ function updateAimLine() {
     totalDist = Math.max(0.25, tMin);
   }
 
-  // Grosor base más visible y engorda + se alarga conforme sube la potencia
   const currentPower = isCharging ? power : 0;
   const dashLength = 0.16 + currentPower * 0.22;
   const gapLength = 0.12;
-  const thickness = 0.026 + currentPower * 0.042; // Más grueso de base y crece con la fuerza
+  const thickness = 0.026 + currentPower * 0.042;
   const step = dashLength + gapLength;
 
   const startOffset = BALL_RADIUS + 0.08;
@@ -235,6 +235,7 @@ export function releaseShot(customPower = null) {
       const vx = Math.cos(aimAngle) * impulseStrength;
       const vz = Math.sin(aimAngle) * impulseStrength;
       body.applyCentralImpulse(new AmmoLib.btVector3(vx, 0, vz));
+      playCueHitSound(finalPower);
 
       new TWEEN.Tween({ x: impactX })
         .to({ x: -(BALL_RADIUS + 0.3) }, 220)
