@@ -84,3 +84,15 @@ export function updatePhysics(deltaTime) {
     }
   }
 }
+
+export function removeRigidBody(mesh) {
+  if (!physicsWorld || !mesh.userData.physicsBody) return;
+  physicsWorld.removeRigidBody(mesh.userData.physicsBody);
+  AmmoLib.destroy(mesh.userData.physicsBody);
+  mesh.userData.physicsBody = null;
+
+  const idx = rigidBodies.indexOf(mesh);
+  if (idx !== -1) {
+    rigidBodies.splice(idx, 1);
+  }
+}

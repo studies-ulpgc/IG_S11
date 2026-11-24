@@ -369,3 +369,69 @@ canvas {
   color: #fff;
   border-color: #3b82f6;
 }
+
+/* --- PANTALLA DE INICIO --- */
+.start-card {
+  text-align: center;
+  max-width: 420px;
+}
+.start-subtitle {
+  color: #94a3b8;
+  font-size: 13px;
+  margin-bottom: 18px;
+}
+.mode-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.mode-btn, .bot-box {
+  background: rgba(30, 41, 59, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  padding: 14px 16px;
+  color: #f8fafc;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.mode-btn:hover {
+  background: rgba(37, 99, 235, 0.3);
+  border-color: #3b82f6;
+}
+.bot-box {
+  cursor: default;
+}
+.mode-title {
+  font-weight: 700;
+  font-size: 15px;
+}
+.mode-desc {
+  font-size: 12px;
+  color: #94a3b8;
+}
+.diff-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+.diff-btn {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #e2e8f0;
+  padding: 7px 0;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.diff-btn:hover {
+  background: #ef4444;
+  border-color: #f87171;
+  color: #fff;
+}

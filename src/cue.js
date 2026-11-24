@@ -3,6 +3,7 @@ import * as TWEEN from "@tweenjs/tween.js";
 import { AmmoLib } from "./physics.js";
 import { BALL_RADIUS, balls, cueBall } from "./balls.js";
 import { TABLE_WIDTH, TABLE_DEPTH } from "./table.js";
+import { playCueHitSound } from "./audio.js";
 
 export let aimAngle = 0;
 export let isShooting = false;

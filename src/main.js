@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import * as TWEEN from "@tweenjs/tween.js";
-import { initPhysics, updatePhysics, AmmoLib } from "./physics.js";
+import { initPhysics, updatePhysics, removeRigidBody, AmmoLib } from "./physics.js";
 import { buildTable, POCKETS, POCKET_RADIUS, TABLE_WIDTH, TABLE_DEPTH } from "./table.js";
 import { spawnBalls, balls, cueBall, BALL_RADIUS } from "./balls.js";
 import {
@@ -85,11 +85,15 @@ async function init() {
 }
 
 function restartMatch(newMode = gameState.mode) {
-  // Limpiar confeti y bolas antiguas
+  // Limpiar confeti y bolas antiguas (3D + cuerpo físico en Ammo.js)
   confettiParticles.forEach((p) => scene.remove(p.mesh));
   confettiParticles = [];
-  balls.forEach((b) => scene.remove(b));
+  balls.forEach((b) => {
+    removeRigidBody(b);
+    scene.remove(b);
+  });
 
+  wasMoving = false;
   resetGameState(newMode);
   spawnBalls(scene);
   saveTurnSnapshot();

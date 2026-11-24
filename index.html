@@ -8,6 +8,35 @@
     <script src="https://cdn.jsdelivr.net/gh/kripken/ammo.js@HEAD/builds/ammo.js"></script>
   </head>
   <body>
+    <!-- PANTALLA DE INICIO (Selector de modo y dificultad del Bot) -->
+    <div id="start-modal" class="modal-overlay">
+      <div class="modal-card start-card">
+        <div class="gameover-icon">🎱</div>
+        <h2>Billar 3D · Bola 8</h2>
+        <p class="start-subtitle">Elige el modo de juego</p>
+
+        <div class="mode-grid">
+          <button id="btn-mode-practice" class="mode-btn">
+            <span class="mode-title">🎯 Modo Práctica</span>
+            <span class="mode-desc">Entrena solo y rebobina tiros</span>
+          </button>
+
+          <button id="btn-mode-pvp" class="mode-btn">
+            <span class="mode-title">👥 1 vs 1 Local</span>
+            <span class="mode-desc">Dos jugadores en el mismo equipo</span>
+          </button>
+
+          <div class="bot-box">
+            <span class="mode-title">🤖 Vs Bot IA</span>
+            <div class="diff-row">
+              <button class="diff-btn" data-diff="easy">Fácil</button>
+              <button class="diff-btn" data-diff="medium">Medio</button>
+              <button class="diff-btn" data-diff="hard">Difícil</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
     <!-- HUD SUPERIOR -->
     <div id="hud-top">
       <!-- Tarjeta Jugador 1 (Azul) -->
