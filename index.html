@@ -8,16 +8,89 @@
     <script src="https://cdn.jsdelivr.net/gh/kripken/ammo.js@HEAD/builds/ammo.js"></script>
   </head>
   <body>
+    <!-- HUD SUPERIOR -->
+    <div id="hud-top">
+      <!-- Tarjeta Jugador 1 (Azul) -->
+      <div id="card-p1" class="player-card p1 active">
+        <div id="badge-p1" class="group-badge open" title="Grupo asignado">?</div>
+        <div class="player-info">
+          <span id="name-p1" class="player-name">Jugador 1</span>
+          <span id="sub-p1" class="player-sub">Mesa abierta · 7 rest.</span>
+        </div>
+      </div>
+
+      <!-- Centro: Estado del turno + Desplegable de bolas metidas -->
+      <div class="hud-center">
+        <div id="turn-banner" class="turn-banner">Turno: Jugador 1</div>
+
+        <div class="pocketed-dropdown-wrapper">
+          <button id="btn-pocketed-toggle" class="hud-pill-btn">
+            🎱 Bolas metidas (<span id="pocketed-count">0</span>) ▾
+          </button>
+          <div id="pocketed-panel" class="pocketed-panel hidden">
+            <div id="pocketed-list" class="pocketed-list">
+              <span class="empty-msg">Aún no ha caído ninguna bola</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tarjeta Jugador 2 / Bot (Rojo) -->
+      <div id="card-p2" class="player-card p2">
+        <div class="player-info right">
+          <span id="name-p2" class="player-name">Jugador 2</span>
+          <span id="sub-p2" class="player-sub">Mesa abierta · 7 rest.</span>
+        </div>
+        <div id="badge-p2" class="group-badge open" title="Grupo asignado">?</div>
+      </div>
+    </div>
+
+    <!-- BOTONES FLOTANTES SUPERIOR DERECHA (Acciones rápidas y Ayuda) -->
+    <div id="hud-actions">
+      <button id="btn-rewind" class="icon-btn hidden" title="Rebobinar último tiro (Práctica)">⏪</button>
+      <button id="btn-reset-table" class="icon-btn" title="Reiniciar mesa">↺</button>
+      <button id="btn-surrender" class="icon-btn danger" title="Rendirse">🏳️</button>
+      <button id="btn-mute" class="icon-btn" title="Silenciar / Activar sonido">🔊</button>
+      <button id="btn-help" class="icon-btn help" title="Controles e instrucciones">?</button>
+    </div>
+
+    <!-- POP-UP DE AYUDA (?) -->
+    <div id="help-modal" class="modal-overlay hidden">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3>🎱 Controles y Reglas</h3>
+          <button id="btn-close-help" class="close-btn">✕</button>
+        </div>
+        <ul class="help-list">
+          <li><strong>← / →</strong>: Apuntar el taco (mantén <strong>Shift</strong> para giro rápido).</li>
+          <li><strong>Mantener Espacio</strong>: Cargar potencia (las rayas crecen y pasan de verde a rojo).</li>
+          <li><strong>↓ (Flecha Abajo)</strong>: Frenar / reducir potencia mientras cargas.</li>
+          <li><strong>Enter</strong>: Modo Turbo (acelera el giro, la carga y el movimiento de las bolas).</li>
+          <li><strong>1 · 2 · 3</strong>: Cambiar entre Vista Tiro, Cenital 2D (H/V) y Libre 3D.</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- CARTEL DE FIN DE PARTIDA (Victoria / Bola 8 prematura) -->
+    <div id="gameover-modal" class="modal-overlay hidden">
+      <div class="modal-card gameover-card">
+        <div id="gameover-icon" class="gameover-icon">🏆</div>
+        <h2 id="gameover-title">¡Victoria!</h2>
+        <p id="gameover-reason">Jugador 1 gana la partida</p>
+        <div class="gameover-buttons">
+          <button id="btn-play-again" class="primary-btn">Jugar otra vez</button>
+          <button id="btn-toggle-practice" class="secondary-btn">Cambiar a Práctica</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- HUD INFERIOR (Solo cámaras) -->
     <div id="hud-bottom">
       <div class="cam-controls">
         <button id="btn-cam-1" class="active">1 · Vista Tiro</button>
         <button id="btn-cam-2">2 · Cenital</button>
         <button id="btn-cenital-rot" title="Girar cenital Horizontal/Vertical">↻ H/V</button>
         <button id="btn-cam-3">3 · Libre 3D</button>
-      </div>
-
-      <div class="controls-hint">
-        ← →: Apuntar · Espacio (↑) / ↓: Fuerza · Esc: Cancelar · Enter: Saltar espera
       </div>
     </div>
 
