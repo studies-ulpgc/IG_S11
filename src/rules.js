@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { AmmoLib } from "./physics.js";
-import { balls, cueBall, BALL_RADIUS } from "./balls.js";
+import { balls } from "./balls.js";
 
 export const gameState = {
   mode: "pvp", // "practice" | "pvp" | "bot"
@@ -8,12 +8,13 @@ export const gameState = {
   turn: 1, // 1 = Azul, 2 = Rojo (o Bot)
   groups: { 1: null, 2: null }, // null | "solid" | "stripe"
   pocketedThisTurn: [],
-  allPocketed: [], // Historial ordenado de bolas metidas
+  allPocketed: [],
   cueBallPocketedThisTurn: false,
+  firstBallHit: null, // Primera bola que toca la blanca en el tiro
   gameOver: false,
   winner: null,
   winReason: "",
-  snapshot: null, // Para rebobinar en modo práctica
+  snapshot: null,
 };
 
 export function resetGameState(mode = gameState.mode, difficulty = gameState.botDifficulty) {
@@ -24,16 +25,17 @@ export function resetGameState(mode = gameState.mode, difficulty = gameState.bot
   gameState.pocketedThisTurn = [];
   gameState.allPocketed = [];
   gameState.cueBallPocketedThisTurn = false;
+  gameState.firstBallHit = null;
   gameState.gameOver = false;
   gameState.winner = null;
   gameState.winReason = "";
   gameState.snapshot = null;
 }
 
-// Guarda la posición exacta de todas las bolas antes de golpear (para Rebobinar en práctica)
 export function saveTurnSnapshot() {
   gameState.pocketedThisTurn = [];
   gameState.cueBallPocketedThisTurn = false;
+  gameState.firstBallHit = null;
 
   gameState.snapshot = balls.map((b) => ({
     ball: b,
@@ -42,6 +44,12 @@ export function saveTurnSnapshot() {
     pocketed: b.userData.ballInfo.pocketed,
     visible: b.visible,
   }));
+}
+
+export function registerFirstBallHit(ballNumber) {
+  if (gameState.firstBallHit === null && ballNumber !== 0) {
+    gameState.firstBallHit = ballNumber;
+  }
 }
 
 export function rewindLastShot() {
@@ -70,7 +78,6 @@ export function rewindLastShot() {
     body.activate();
   });
 
-  // Limpiamos del historial las bolas que cayeron en ese último tiro
   const activeNums = new Set(
     balls.filter((b) => b.userData.ballInfo.pocketed).map((b) => b.userData.ballInfo.number)
   );
@@ -102,7 +109,7 @@ export function getRemainingCount(player) {
 export function evaluateTurnEnd(findFreeSpotFn) {
   if (gameState.gameOver) return null;
 
-  // En modo práctica no se pierde ni se cambia de turno; si cae la 8, reaparece en un sitio libre
+  // MODO PRÁCTICA
   if (gameState.mode === "practice") {
     const eightBall = balls.find((b) => b.userData.ballInfo.number === 8);
     if (eightBall && eightBall.userData.ballInfo.pocketed) {
@@ -127,17 +134,17 @@ export function evaluateTurnEnd(findFreeSpotFn) {
     return { event: "continue", message: "Modo Práctica" };
   }
 
-  // --- MODO COMPETITIVO (1 vs 1 / BOT) ---
+  // MODO COMPETITIVO (1 vs 1 / BOT)
   const p = gameState.turn;
   const opp = p === 1 ? 2 : 1;
   const pocketed = gameState.pocketedThisTurn;
   const eightPocketed = pocketed.includes(8);
   const scratch = gameState.cueBallPocketedThisTurn;
+  const myGroup = gameState.groups[p];
+  const remainingBeforeShot = myGroup ? getRemainingCount(p) : 7;
 
   // 1. Comprobar si cayó la Bola 8
   if (eightPocketed) {
-    const myGroup = gameState.groups[p];
-    const remainingBeforeShot = myGroup ? getRemainingCount(p) : 7;
     gameState.gameOver = true;
 
     if (myGroup && remainingBeforeShot === 0 && !scratch) {
@@ -153,11 +160,32 @@ export function evaluateTurnEnd(findFreeSpotFn) {
     }
   }
 
-  // 2. Asignar Lisas o Rayadas si la mesa estaba abierta
+  // 2. Comprobar faltas de primer toque
+  const hit = gameState.firstBallHit;
+  let foulReason = null;
+
+  if (scratch) {
+    foulReason = "Falta: cayó la bola blanca";
+  } else if (hit === null) {
+    foulReason = "Falta: no tocaste ninguna bola";
+  } else if (!myGroup && hit === 8) {
+    foulReason = "Falta: tocaste la Bola 8 en mesa abierta";
+  } else if (myGroup) {
+    if (remainingBeforeShot === 0 && hit !== 8) {
+      foulReason = "Falta: debías tocar primero la Bola 8";
+    } else if (remainingBeforeShot > 0) {
+      const hitGroup = hit === 8 ? "eight" : hit < 8 ? "solid" : "stripe";
+      if (hitGroup !== myGroup) {
+        foulReason = `Falta: tocaste primero una bola ${hit === 8 ? "negra" : "del rival"}`;
+      }
+    }
+  }
+
+  // 3. Asignar Lisas o Rayadas si la mesa estaba abierta y no hubo falta
   const coloredPocketed = pocketed.filter((n) => n !== 8);
   let assignedNow = false;
 
-  if (!gameState.groups[1] && coloredPocketed.length > 0 && !scratch) {
+  if (!gameState.groups[1] && coloredPocketed.length > 0 && !foulReason) {
     const firstBall = coloredPocketed[0];
     const chosenGroup = firstBall < 8 ? "solid" : "stripe";
     gameState.groups[p] = chosenGroup;
@@ -165,26 +193,47 @@ export function evaluateTurnEnd(findFreeSpotFn) {
     assignedNow = true;
   }
 
-  // 3. Decidir si conserva turno o pasa al rival
-  const myGroup = gameState.groups[p];
+  // 4. Evaluar bolas metidas (propias y del rival)
+  const updatedGroup = gameState.groups[p];
   const scoredOwnBall =
-    myGroup &&
-    coloredPocketed.some((n) => (myGroup === "solid" ? n < 8 : n > 8));
+    updatedGroup &&
+    coloredPocketed.some((n) => (updatedGroup === "solid" ? n < 8 : n > 8));
+  const scoredOpponentBall =
+    updatedGroup &&
+    coloredPocketed.some((n) => (updatedGroup === "solid" ? n > 8 : n < 8));
 
-  if (!scratch && (assignedNow || scoredOwnBall)) {
-    return {
-      event: "keep_turn",
-      message: assignedNow
-        ? `Jugador ${p} juega con ${myGroup === "solid" ? "Lisas (1-7)" : "Rayadas (9-15)"}`
-        : `¡Buena bola! Repite tiro Jugador ${p}`,
-    };
-  } else {
+  // Si hay falta o metiste una bola del rival, pasa el turno
+  if (foulReason || scoredOpponentBall) {
     gameState.turn = opp;
+    const msg = foulReason
+      ? `${foulReason}. Turno de Jugador ${opp}`
+      : `Metiste una bola del rival. Turno de Jugador ${opp}`;
     return {
-      event: "switch_turn",
-      message: scratch ? `Falta (blanca). Turno de Jugador ${opp}` : `Turno de Jugador ${opp}`,
+      event: "foul",
+      foulTitle: foulReason ? "⚠️ ¡FALTA!" : "🔄 CAMBIO DE TURNO",
+      foulSub: foulReason || "Entró una bola del rival",
+      message: msg,
     };
   }
+
+  // Si asignaste grupo ahora o metiste bola propia sin falta, repites tiro
+  if (assignedNow || scoredOwnBall) {
+    return {
+      event: assignedNow ? "assigned" : "keep_turn",
+      player: p,
+      assignedGroup: updatedGroup,
+      message: assignedNow
+        ? `Jugador ${p} juega con ${updatedGroup === "solid" ? "Lisas (1-7)" : "Rayadas (9-15)"}`
+        : `¡Buena bola! Repite tiro Jugador ${p}`,
+    };
+  }
+
+  // No entró ninguna bola -> cambio limpio de turno
+  gameState.turn = opp;
+  return {
+    event: "switch_turn",
+    message: `Turno de Jugador ${opp}`,
+  };
 }
 
 export function surrenderGame() {

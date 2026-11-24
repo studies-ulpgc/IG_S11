@@ -20,6 +20,7 @@ import {
   saveTurnSnapshot,
   rewindLastShot,
   registerBallPocketed,
+  registerFirstBallHit,
   evaluateTurnEnd,
   getRemainingCount,
   surrenderGame,
@@ -500,9 +501,8 @@ function findFreeSpot(preferredX = -2.5, preferredZ = 0) {
 
 function checkBallCollisionsAudio() {
   const now = performance.now();
-  if (now - lastCollisionSoundTime < 45) return;
-
   const threshold = BALL_RADIUS * 2.08;
+
   for (let i = 0; i < balls.length; i++) {
     const b1 = balls[i];
     if (b1.userData.ballInfo.pocketed) continue;
@@ -512,13 +512,18 @@ function checkBallCollisionsAudio() {
 
       const dist = b1.position.distanceTo(b2.position);
       if (dist <= threshold) {
-        const v1 = b1.userData.physicsBody.getLinearVelocity();
-        const v2 = b2.userData.physicsBody.getLinearVelocity();
-        const relSpeed = Math.hypot(v1.x() - v2.x(), v1.z() - v2.z());
-        if (relSpeed > 0.35) {
-          playBallCollisionSound(Math.min(1, relSpeed / 5));
-          lastCollisionSoundTime = now;
-          return;
+        // Registrar la primera bola que toca la blanca en este tiro
+        if (b1 === cueBall) registerFirstBallHit(b2.userData.ballInfo.number);
+        else if (b2 === cueBall) registerFirstBallHit(b1.userData.ballInfo.number);
+
+        if (now - lastCollisionSoundTime >= 45) {
+          const v1 = b1.userData.physicsBody.getLinearVelocity();
+          const v2 = b2.userData.physicsBody.getLinearVelocity();
+          const relSpeed = Math.hypot(v1.x() - v2.x(), v1.z() - v2.z());
+          if (relSpeed > 0.35) {
+            playBallCollisionSound(Math.min(1, relSpeed / 5));
+            lastCollisionSoundTime = now;
+          }
         }
       }
     }
@@ -665,6 +670,23 @@ function animate() {
     const result = evaluateTurnEnd(findFreeSpot);
     if (result) {
       updateHUD(result.message || result.reason);
+      if (result.event === "assigned") {
+        const isBot = gameState.mode === "bot" && result.player === 2;
+        const pName = isBot ? "BOT IA" : `JUGADOR ${result.player}`;
+        const isSolid = result.assignedGroup === "solid";
+        showWiiAnnouncement({
+          title: `${pName}: ${isSolid ? "LISAS" : "RAYADAS"}`,
+          sub: isSolid ? "Bolas 1 a 7" : "Bolas 9 a 15",
+          type: isSolid ? "solid" : "stripe",
+          badgeText: isSolid ? "1" : "9",
+        });
+      } else if (result.event === "foul") {
+        showWiiAnnouncement({
+          title: result.foulTitle,
+          sub: result.foulSub,
+          type: "foul",
+        });
+      }
       if (result.event === "early_eight_loss") {
         playEarlyEightAnimation(lastPocketPos, result);
       } else if (result.event === "win") {
@@ -712,6 +734,51 @@ function animate() {
 
   if (controls.enabled) controls.update();
   renderer.render(scene, camera);
+}
+
+function showWiiAnnouncement({ title, sub, type = "solid", badgeText = "" }) {
+  const el = document.getElementById("wii-announcement");
+  const badge = document.getElementById("wii-ann-badge");
+  const titleEl = document.getElementById("wii-ann-title");
+  const subEl = document.getElementById("wii-ann-sub");
+
+  el.classList.remove("hidden", "foul");
+  badge.className = "wii-ann-badge";
+
+  if (type === "foul") {
+    el.classList.add("foul");
+    badge.classList.add("foul");
+    badge.textContent = "!";
+  } else {
+    badge.classList.add(type);
+    badge.textContent = badgeText;
+  }
+
+  titleEl.textContent = title;
+  subEl.textContent = sub;
+
+  const state = { scale: 0.4, opacity: 0 };
+  new TWEEN.Tween(state)
+    .to({ scale: 1, opacity: 1 }, 420)
+    .easing(TWEEN.Easing.Elastic.Out)
+    .onUpdate(() => {
+      el.style.opacity = state.opacity;
+      el.style.transform = `translate(-50%, -50%) scale(${state.scale})`;
+    })
+    .onComplete(() => {
+      setTimeout(() => {
+        new TWEEN.Tween(state)
+          .to({ scale: 0.85, opacity: 0 }, 300)
+          .easing(TWEEN.Easing.Quadratic.In)
+          .onUpdate(() => {
+            el.style.opacity = state.opacity;
+            el.style.transform = `translate(-50%, -50%) scale(${state.scale})`;
+          })
+          .onComplete(() => el.classList.add("hidden"))
+          .start();
+      }, 1600);
+    })
+    .start();
 }
 
 init();
