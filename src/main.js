@@ -177,7 +177,6 @@ function setupControls() {
     setCameraMode(2);
   });
   document.getElementById("btn-cam-3").addEventListener("click", () => setCameraMode(3));
-  document.getElementById("btn-cancel-shot").addEventListener("click", () => cancelCharge());
 }
 
 function areAllBallsStopped() {
