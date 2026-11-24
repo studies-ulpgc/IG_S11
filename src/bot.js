@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import * as TWEEN from "@tweenjs/tween.js";
 import { balls, cueBall, BALL_RADIUS } from "./balls.js";
 import { POCKETS } from "./table.js";
 import { gameState, getRemainingCount, saveTurnSnapshot } from "./rules.js";
@@ -36,37 +37,66 @@ export function triggerBotTurn(onStartBanner) {
     const shot = computeBestShot();
     saveTurnSnapshot();
 
-    // Giramos suavemente el taco hacia el ángulo calculado y disparamos
-    const startAngle = aimAngle;
-    const targetAngle = shot.angle;
-    let progress = 0;
+    // Calculamos el ángulo más corto para girar el taco sin dar vueltas innecesarias
+    let diff = (shot.angle - aimAngle) % (Math.PI * 2);
+    if (diff > Math.PI) diff -= Math.PI * 2;
+    if (diff < -Math.PI) diff += Math.PI * 2;
+    const targetAngle = aimAngle + diff;
 
-    const animInterval = setInterval(() => {
-      progress += 0.12;
-      if (progress >= 1) {
-        clearInterval(animInterval);
+    new TWEEN.Tween({ angle: aimAngle })
+      .to({ angle: targetAngle }, 650)
+      .easing(TWEEN.Easing.Cubic.InOut)
+      .onUpdate((obj) => {
+        if (!isBotTurn()) return;
+        setAimAngle(obj.angle);
+      })
+      .onComplete(() => {
+        if (!isBotTurn()) {
+          botThinking = false;
+          return;
+        }
         setAimAngle(targetAngle);
         setTimeout(() => {
           releaseShot(shot.power);
           botThinking = false;
         }, 250);
-      } else {
-        setAimAngle(THREE.MathUtils.lerp(startAngle, targetAngle, progress));
-      }
-    }, 30);
-  }, 750);
+      })
+      .start();
+  }, 700);
+}
+
+// Comprueba si alguna bola bloquea el segmento entre pointA y pointB
+function isPathBlocked(pointA, pointB, ignoreBalls = []) {
+  const seg = new THREE.Vector3().subVectors(pointB, pointA);
+  seg.y = 0;
+  const len = seg.length();
+  if (len < 0.001) return false;
+  const dir = seg.clone().divideScalar(len);
+  const clearance = BALL_RADIUS * 2.05;
+
+  for (const b of balls) {
+    if (b.userData.ballInfo.pocketed || ignoreBalls.includes(b)) continue;
+    const toBall = new THREE.Vector3().subVectors(b.position, pointA);
+    toBall.y = 0;
+    const proj = toBall.dot(dir);
+
+    if (proj > 0.05 && proj < len - 0.05) {
+      const perpSq = toBall.lengthSq() - proj * proj;
+      if (perpSq < clearance * clearance) return true;
+    }
+  }
+  return false;
 }
 
 function computeBestShot() {
   const myGroup = gameState.groups[2];
   const rem = getRemainingCount(2);
 
-  // Filtrar qué bolas puede tirar el bot legalmente
   const validTargets = balls.filter((b) => {
     const info = b.userData.ballInfo;
     if (info.pocketed || info.number === 0) return false;
-    if (!myGroup) return info.number !== 8; // Mesa abierta: cualquiera menos la 8
-    if (rem === 0) return info.number === 8; // Ya limpió su grupo: a por la 8
+    if (!myGroup) return info.number !== 8;
+    if (rem === 0) return info.number === 8;
     return info.group === myGroup;
   });
 
@@ -80,13 +110,11 @@ function computeBestShot() {
 
   for (const target of validTargets) {
     for (const pocket of POCKETS) {
-      // Vector desde la bola objetivo hasta la tronera
       const toPocket = new THREE.Vector3().subVectors(pocket, target.position);
       toPocket.y = 0;
       const distToPocket = toPocket.length();
       const dirToPocket = toPocket.clone().normalize();
 
-      // Punto fantasma donde debe impactar la blanca (detrás de la bola objetivo)
       const ghostPos = target.position
         .clone()
         .sub(dirToPocket.clone().multiplyScalar(BALL_RADIUS * 1.95));
@@ -96,11 +124,15 @@ function computeBestShot() {
       const distCueToGhost = cueToGhost.length();
       const dirCueToGhost = cueToGhost.clone().normalize();
 
-      // Puntuamos qué tan recto es el corte (dot product cercano a 1 = tiro recto)
       const alignment = dirCueToGhost.dot(dirToPocket);
-      if (alignment < 0.25) continue; // Ángulo demasiado cerrado
+      if (alignment < 0.25) continue;
 
-      const score = alignment * 10 - (distToPocket + distCueToGhost) * 0.45;
+      // Penalizamos si hay bolas estorbando en cualquiera de los dos tramos
+      const blockedCue = isPathBlocked(cueBall.position, ghostPos, [cueBall, target]);
+      const blockedPocket = isPathBlocked(target.position, pocket, [cueBall, target]);
+      const obstaclePenalty = (blockedCue ? 12 : 0) + (blockedPocket ? 10 : 0);
+
+      const score = alignment * 10 - (distToPocket + distCueToGhost) * 0.45 - obstaclePenalty;
       if (score > bestScore) {
         bestScore = score;
         bestAngle = Math.atan2(dirCueToGhost.z, dirCueToGhost.x);
@@ -109,7 +141,6 @@ function computeBestShot() {
     }
   }
 
-  // Si ningún tiro estaba claro, apunta directo a la bola válida más cercana
   if (bestScore === -Infinity) {
     const fallback = validTargets[0];
     bestAngle = Math.atan2(
@@ -119,7 +150,6 @@ function computeBestShot() {
     bestPower = 0.65;
   }
 
-  // Aplicamos el margen de error según la dificultad (Fácil / Medio / Difícil)
   const cfg = DIFFICULTY_SETTINGS[gameState.botDifficulty] || DIFFICULTY_SETTINGS.medium;
   const errorRad = THREE.MathUtils.degToRad((Math.random() * 2 - 1) * cfg.maxErrorDeg);
   const powerError = (Math.random() * 2 - 1) * cfg.powerJitter;
