@@ -142,7 +142,10 @@ export function evaluateTurnEnd(findFreeSpotFn) {
   const eightPocketed = pocketed.includes(8);
   const scratch = gameState.cueBallPocketedThisTurn;
   const myGroup = gameState.groups[p];
-  const remainingBeforeShot = myGroup ? getRemainingCount(p) : 7;
+  const ownPocketedThisTurn = myGroup
+    ? pocketed.filter((n) => (myGroup === "solid" ? n < 8 : n > 8)).length
+    : 0;
+  const remainingBeforeShot = myGroup ? getRemainingCount(p) + ownPocketedThisTurn : 7;
 
   // 1. Comprobar si cayó la Bola 8
   if (eightPocketed) {
