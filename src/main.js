@@ -1,7 +1,13 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import * as TWEEN from "@tweenjs/tween.js";
-import { initPhysics, updatePhysics, removeRigidBody, AmmoLib } from "./physics.js";
+import {
+  initPhysics,
+  updatePhysics,
+  getCueBallContacts,
+  removeRigidBody,
+  AmmoLib
+} from "./physics.js";
 import { buildTable, POCKETS, POCKET_RADIUS, TABLE_WIDTH, TABLE_DEPTH } from "./table.js";
 import { spawnBalls, balls, cueBall, BALL_RADIUS } from "./balls.js";
 import {
@@ -174,7 +180,7 @@ function updateHUD(customBanner = null) {
     badge.className = "group-badge";
     if (isPractice) {
       badge.classList.add("open");
-      badge.textContent = "🎱";
+      badge.textContent = "Práctica";
       sub.textContent = `Metidas: ${gameState.allPocketed.length} / 15`;
       return;
     }
@@ -305,7 +311,7 @@ function playEarlyEightAnimation(pocketPos, result) {
       camera.position.y += (Math.random() - 0.5) * 0.14;
       camera.lookAt(pocketPos);
     })
-    .onComplete(() => showGameOverModal(result, "💥"))
+    .onComplete(() => showGameOverModal(result, "Fin"))
     .start();
 }
 
@@ -329,7 +335,7 @@ function playVictoryAnimation(result) {
     });
   }
 
-  showGameOverModal(result, "🏆");
+  showGameOverModal(result, "Victoria");
 }
 
 function showGameOverModal(result, icon) {
@@ -493,12 +499,12 @@ function setupControls() {
     btnSoundMode.addEventListener("click", () => {
       const mode = cycleSoundMode();
       if (mode === "show") {
-        btnSoundMode.textContent = "🎪 Espectáculo";
+        btnSoundMode.textContent = "Espectáculo";
         if (isStartModalOpen()) startIntroMusic();
       } else if (mode === "table") {
-        btnSoundMode.textContent = "🎱 Solo Mesa";
+        btnSoundMode.textContent = "Solo Mesa";
       } else {
-        btnSoundMode.textContent = "🔇 Mute";
+        btnSoundMode.textContent = "Silencio";
       }
     });
   }
@@ -535,7 +541,7 @@ function setupControls() {
   // Rebobinar en práctica y Rendirse
   document.getElementById("btn-rewind").addEventListener("click", () => {
     if (areAllBallsStopped() && rewindLastShot()) {
-      updateHUD("Tiro rebobinado ⏪");
+      updateHUD("Tiro rebobinado");
     }
   });
   document.getElementById("btn-surrender").addEventListener("click", () => {
@@ -592,6 +598,7 @@ function findFreeSpot(preferredX = -2.5, preferredZ = 0) {
   return new THREE.Vector3(0, BALL_RADIUS, 0);
 }
 
+
 function checkBallCollisionsAudio() {
   const now = performance.now();
   const threshold = BALL_RADIUS * 2.08;
@@ -605,9 +612,6 @@ function checkBallCollisionsAudio() {
 
       const dist = b1.position.distanceTo(b2.position);
       if (dist <= threshold) {
-        if (b1 === cueBall) registerFirstBallHit(b2.userData.ballInfo.number);
-        else if (b2 === cueBall) registerFirstBallHit(b1.userData.ballInfo.number);
-
         if (now - lastCollisionSoundTime >= 45) {
           const v1 = b1.userData.physicsBody.getLinearVelocity();
           const v2 = b2.userData.physicsBody.getLinearVelocity();
@@ -748,6 +752,12 @@ function animate() {
   const simSteps = !stopped && isTurbo ? 4 : 1;
   for (let s = 0; s < simSteps; s++) {
     updatePhysics(rawDt);
+
+    // Detectar contactos reales registrados por Ammo.js
+    for (const ballNumber of getCueBallContacts()) {
+      registerFirstBallHit(ballNumber);
+    }
+
     checkBallCollisionsAudio();
     checkPockets();
     checkOutOfBounds();

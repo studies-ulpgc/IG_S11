@@ -3,6 +3,57 @@ export const rigidBodies = [];
 const margin = 0.02;
 let transformAux1;
 export let AmmoLib;
+const ballMeshesByNumber = new Map();
+let cueBallHits = [];
+
+export function resetCueBallContactHistory() {
+  cueBallHits = [];
+}
+
+export function getCueBallContacts() {
+  const contacts = cueBallHits;
+  cueBallHits = [];
+  return contacts;
+}
+
+function collectCueBallManifoldContacts() {
+  if (!physicsWorld || !AmmoLib) return;
+
+  const dispatcher = physicsWorld.getDispatcher();
+  if (!dispatcher) return;
+
+  for (let i = 0; i < dispatcher.getNumManifolds(); i++) {
+    const manifold = dispatcher.getManifoldByIndexInternal(i);
+    const body0 = manifold.getBody0();
+    const body1 = manifold.getBody1();
+    const index0 = body0.getUserIndex();
+    const index1 = body1.getUserIndex();
+    const mesh0 = ballMeshesByNumber.get(index0 - 1);
+    const mesh1 = ballMeshesByNumber.get(index1 - 1);
+    if (!mesh0 || !mesh1) continue;
+
+    let cueMesh = null;
+    let otherMesh = null;
+    if (mesh0.userData.ballInfo?.number === 0) {
+      cueMesh = mesh0;
+      otherMesh = mesh1;
+    } else if (mesh1.userData.ballInfo?.number === 0) {
+      cueMesh = mesh1;
+      otherMesh = mesh0;
+    }
+
+    if (!cueMesh || !otherMesh || cueMesh.userData.ballInfo.pocketed) continue;
+    if (otherMesh.userData.ballInfo.pocketed) continue;
+
+    for (let c = 0; c < manifold.getNumContacts(); c++) {
+      const point = manifold.getContactPoint(c);
+      if (point.getDistance() <= 0.02) {
+        cueBallHits.push(otherMesh.userData.ballInfo.number);
+        break;
+      }
+    }
+  }
+}
 
 export async function initPhysics() {
   // Inicializa la librería cargada en el <script> del HTML
@@ -53,6 +104,10 @@ export function createRigidBody(mesh, shape, mass, pos, quat, options = {}) {
   }
 
   mesh.userData.physicsBody = body;
+  if (mesh.userData.ballInfo) {
+    body.setUserIndex(mesh.userData.ballInfo.number + 1);
+    ballMeshesByNumber.set(mesh.userData.ballInfo.number, mesh);
+  }
 
   if (mass > 0) {
     rigidBodies.push(mesh);
@@ -65,7 +120,13 @@ export function createRigidBody(mesh, shape, mass, pos, quat, options = {}) {
 
 export function updatePhysics(deltaTime) {
   if (!physicsWorld) return;
-  physicsWorld.stepSimulation(deltaTime, 10);
+  const step = Math.min(deltaTime, 1 / 120);
+  const subSteps = Math.max(1, Math.ceil(deltaTime / step));
+
+  for (let i = 0; i < subSteps; i++) {
+    physicsWorld.stepSimulation(step, 1, step);
+    collectCueBallManifoldContacts();
+  }
 
   for (let i = 0; i < rigidBodies.length; i++) {
     const objThree = rigidBodies[i];
@@ -87,6 +148,9 @@ export function updatePhysics(deltaTime) {
 
 export function removeRigidBody(mesh) {
   if (!physicsWorld || !mesh.userData.physicsBody) return;
+  if (mesh.userData.ballInfo) {
+    ballMeshesByNumber.delete(mesh.userData.ballInfo.number);
+  }
   physicsWorld.removeRigidBody(mesh.userData.physicsBody);
   AmmoLib.destroy(mesh.userData.physicsBody);
   mesh.userData.physicsBody = null;

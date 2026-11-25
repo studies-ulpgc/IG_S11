@@ -14,6 +14,7 @@ let audioContext = null;
 let audioUnlocked = false;
 let introRequested = false;
 let introBuffer = null;
+let victorySound = null;
 
 const soundBuffers = Object.create(null);
 
@@ -111,7 +112,7 @@ export function cycleSoundMode() {
   }
 
   if (soundMode !== "show") {
-    stopIntroMusic();
+    stopIntroMusic(0.35);
   }
 
   return soundMode;
@@ -122,11 +123,41 @@ export function startIntroMusic() {
   playIntroIfReady();
 }
 
-export function stopIntroMusic() {
+function fadeOutSound(sound, duration = 0.8) {
+  if (!sound || !sound.isPlaying) return;
+
+  const ctx = sound.context || audioContext;
+  if (!ctx) {
+    sound.stop();
+    return;
+  }
+
+  const startVolume = typeof sound.getVolume === "function"
+    ? sound.getVolume()
+    : 0.35;
+  const startedAt = ctx.currentTime;
+  const endAt = startedAt + duration;
+
+  if (sound.gain) {
+    sound.gain.gain.cancelScheduledValues(startedAt);
+    sound.gain.gain.setValueAtTime(Math.max(startVolume, 0.001), startedAt);
+    sound.gain.gain.exponentialRampToValueAtTime(0.001, endAt);
+  }
+
+  window.setTimeout(() => {
+    if (sound.isPlaying) sound.stop();
+  }, duration * 1000 + 40);
+}
+
+export function stopIntroMusic(duration = 0.9) {
   introRequested = false;
 
   if (bgMusic && bgMusic.isPlaying) {
-    bgMusic.stop();
+    if (duration <= 0) {
+      bgMusic.stop();
+    } else {
+      fadeOutSound(bgMusic, duration);
+    }
   }
 }
 
@@ -145,6 +176,10 @@ function playBufferIfAvailable(key, volume = 0.7) {
   sound.setBuffer(soundBuffers[key]);
   sound.setVolume(volume);
   sound.play();
+
+  if (key === "win") {
+    victorySound = sound;
+  }
 
   return true;
 }
@@ -324,6 +359,10 @@ export function playApplauseSound() {
 
 export function playAwwSound() {
   if (soundMode !== "show") return;
+
+  if (victorySound && victorySound.isPlaying) {
+    fadeOutSound(victorySound, 0.75);
+  }
 
   if (playBufferIfAvailable("aww", 0.6)) {
     return;

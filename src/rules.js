@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { AmmoLib } from "./physics.js";
+import { AmmoLib, resetCueBallContactHistory } from "./physics.js";
 import { balls } from "./balls.js";
 
 export const gameState = {
@@ -36,6 +36,7 @@ export function saveTurnSnapshot() {
   gameState.pocketedThisTurn = [];
   gameState.cueBallPocketedThisTurn = false;
   gameState.firstBallHit = null;
+  resetCueBallContactHistory();
 
   gameState.snapshot = balls.map((b) => ({
     ball: b,
@@ -210,7 +211,7 @@ export function evaluateTurnEnd(findFreeSpotFn) {
       : `Metiste una bola del rival. Turno de Jugador ${opp}`;
     return {
       event: "foul",
-      foulTitle: foulReason ? "⚠️ ¡FALTA!" : "🔄 CAMBIO DE TURNO",
+      foulTitle: foulReason ? "FALTA" : "CAMBIO DE TURNO",
       foulSub: foulReason || "Entró una bola del rival",
       message: msg,
     };

@@ -26,7 +26,7 @@ export function triggerBotTurn(onStartBanner) {
   if (botThinking || !isBotTurn() || !cueBall || cueBall.userData.ballInfo.pocketed) return;
   botThinking = true;
 
-  if (onStartBanner) onStartBanner("🤖 Bot pensando su tiro...");
+  if (onStartBanner) onStartBanner("Bot pensando su tiro...");
 
   setTimeout(() => {
     if (!isBotTurn()) {

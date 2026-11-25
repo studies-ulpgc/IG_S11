@@ -17,17 +17,17 @@
 
         <div class="mode-grid">
           <button id="btn-mode-practice" class="mode-btn">
-            <span class="mode-title">🎯 Modo Práctica</span>
+            <span class="mode-title">Modo Práctica</span>
             <span class="mode-desc">Entrena solo y rebobina tiros</span>
           </button>
 
           <button id="btn-mode-pvp" class="mode-btn">
-            <span class="mode-title">👥 1 vs 1 Local</span>
+            <span class="mode-title">1 vs 1 Local</span>
             <span class="mode-desc">Dos jugadores en el mismo equipo</span>
           </button>
 
           <div class="bot-box">
-            <span class="mode-title">🤖 Vs Bot IA</span>
+            <span class="mode-title">Vs Bot IA</span>
             <div class="diff-row">
               <button class="diff-btn" data-diff="easy">Fácil</button>
               <button class="diff-btn" data-diff="medium">Medio</button>
@@ -41,13 +41,13 @@
     <!-- MENÚ DE PAUSA (Partida congelada de fondo) -->
     <div id="pause-modal" class="modal-overlay wii-pause-overlay hidden">
       <div class="modal-card wii-card">
-        <div class="gameover-icon">⏸️</div>
+        <div class="gameover-icon">Pausa</div>
         <h2>Juego en Pausa</h2>
         <p class="start-subtitle">La partida está detenida</p>
         <div class="mode-grid">
-          <button id="btn-resume" class="primary-btn wii-full-btn">▶ Continuar partida</button>
-          <button id="btn-pause-restart" class="secondary-btn wii-full-btn">↺ Reiniciar mesa</button>
-          <button id="btn-pause-menu" class="secondary-btn wii-full-btn">🏠 Menú principal</button>
+          <button id="btn-resume" class="primary-btn wii-full-btn">Continuar partida</button>
+          <button id="btn-pause-restart" class="secondary-btn wii-full-btn">Reiniciar mesa</button>
+          <button id="btn-pause-menu" class="secondary-btn wii-full-btn">Menú principal</button>
         </div>
       </div>
     </div>
@@ -67,7 +67,7 @@
 
         <div class="pocketed-dropdown-wrapper">
           <button id="btn-pocketed-toggle" class="hud-pill-btn">
-            🎱 Bolas metidas (<span id="pocketed-count">0</span>) ▾
+            Bolas metidas (<span id="pocketed-count">0</span>)
           </button>
           <div id="pocketed-panel" class="pocketed-panel hidden">
             <div id="pocketed-list" class="pocketed-list">
@@ -97,10 +97,10 @@
 
     <!-- BOTONES FLOTANTES SUPERIOR DERECHA -->
     <div id="hud-actions">
-      <button id="btn-pause" class="icon-btn" title="Pausar (Esc)">⏸</button>
-      <button id="btn-rewind" class="icon-btn hidden" title="Rebobinar último tiro (Práctica)">⏪</button>
-      <button id="btn-surrender" class="icon-btn danger" title="Rendirse">🏳️</button>
-      <button id="btn-sound-mode" class="hud-pill-btn sound-pill" title="Cambiar modo de sonido">🎪 Espectáculo</button>
+      <button id="btn-pause" class="icon-btn" title="Pausar (Esc)">Pausa</button>
+      <button id="btn-rewind" class="icon-btn hidden" title="Rebobinar último tiro (Práctica)">Rebobinar</button>
+      <button id="btn-surrender" class="icon-btn danger" title="Rendirse">Rendirse</button>
+      <button id="btn-sound-mode" class="hud-pill-btn sound-pill" title="Cambiar modo de sonido">Espectáculo</button>
       <button id="btn-help" class="icon-btn help" title="Controles e instrucciones">?</button>
     </div>
 
@@ -108,8 +108,8 @@
     <div id="help-modal" class="modal-overlay hidden">
       <div class="modal-card wii-card">
         <div class="modal-header">
-          <h3>🎱 Controles y Reglas</h3>
-          <button id="btn-close-help" class="close-btn">✕</button>
+          <h3>Controles y Reglas</h3>
+          <button id="btn-close-help" class="close-btn">Cerrar</button>
         </div>
         <ul class="help-list">
           <li><strong>← / →</strong>: Apuntar el taco (mantén <strong>Shift</strong> para giro rápido).</li>
@@ -125,7 +125,7 @@
     <!-- CARTEL DE FIN DE PARTIDA -->
     <div id="gameover-modal" class="modal-overlay hidden">
       <div class="modal-card wii-card gameover-card">
-        <div id="gameover-icon" class="gameover-icon">🏆</div>
+        <div id="gameover-icon" class="gameover-icon">Victoria</div>
         <h2 id="gameover-title">¡Victoria!</h2>
         <p id="gameover-reason">Jugador 1 gana la partida</p>
         <div class="gameover-buttons">
@@ -140,7 +140,7 @@
       <div class="cam-controls">
         <button id="btn-cam-1" class="active">1 · Vista Tiro</button>
         <button id="btn-cam-2">2 · Cenital</button>
-        <button id="btn-cenital-rot" title="Girar cenital Horizontal/Vertical">↻ H/V</button>
+        <button id="btn-cenital-rot" title="Girar cenital Horizontal/Vertical">H/V</button>
         <button id="btn-cam-3">3 · Libre 3D</button>
       </div>
     </div>
