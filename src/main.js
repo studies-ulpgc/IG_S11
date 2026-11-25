@@ -335,7 +335,7 @@ function playVictoryAnimation(result) {
     });
   }
 
-  showGameOverModal(result, "Victoria");
+  showGameOverModal(result, "🏆");
 }
 
 function showGameOverModal(result, icon) {
@@ -499,12 +499,12 @@ function setupControls() {
     btnSoundMode.addEventListener("click", () => {
       const mode = cycleSoundMode();
       if (mode === "show") {
-        btnSoundMode.textContent = "Espectáculo";
+        btnSoundMode.textContent = "👥 Audiencia";
         if (isStartModalOpen()) startIntroMusic();
       } else if (mode === "table") {
         btnSoundMode.textContent = "Solo Mesa";
       } else {
-        btnSoundMode.textContent = "Silencio";
+        btnSoundMode.textContent = "🔇 Silencio";
       }
     });
   }
@@ -541,7 +541,7 @@ function setupControls() {
   // Rebobinar en práctica y Rendirse
   document.getElementById("btn-rewind").addEventListener("click", () => {
     if (areAllBallsStopped() && rewindLastShot()) {
-      updateHUD("Tiro rebobinado");
+      updateHUD("Tiro rebobinado ⏪");
     }
   });
   document.getElementById("btn-surrender").addEventListener("click", () => {
