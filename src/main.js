@@ -180,8 +180,8 @@ function updateHUD(customBanner = null) {
     badge.className = "group-badge";
     if (isPractice) {
       badge.classList.add("open");
-      badge.textContent = "Práctica";
-      sub.textContent = `Metidas: ${gameState.allPocketed.length} / 15`;
+      badge.textContent = "";
+      sub.textContent = `Metidas: ${gameState.allPocketed.length} / 14`;
       return;
     }
 
