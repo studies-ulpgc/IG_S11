@@ -110,7 +110,6 @@ export function getRemainingCount(player) {
 export function evaluateTurnEnd(findFreeSpotFn) {
   if (gameState.gameOver) return null;
 
-  // MODO PRÁCTICA
   if (gameState.mode === "practice") {
     const eightBall = balls.find((b) => b.userData.ballInfo.number === 8);
     if (eightBall && eightBall.userData.ballInfo.pocketed) {
@@ -135,7 +134,6 @@ export function evaluateTurnEnd(findFreeSpotFn) {
     return { event: "continue", message: "Modo Práctica" };
   }
 
-  // MODO COMPETITIVO (1 vs 1 / BOT)
   const p = gameState.turn;
   const opp = p === 1 ? 2 : 1;
   const pocketed = gameState.pocketedThisTurn;
@@ -147,7 +145,6 @@ export function evaluateTurnEnd(findFreeSpotFn) {
     : 0;
   const remainingBeforeShot = myGroup ? getRemainingCount(p) + ownPocketedThisTurn : 7;
 
-  // 1. Comprobar si cayó la Bola 8
   if (eightPocketed) {
     gameState.gameOver = true;
 
@@ -164,7 +161,6 @@ export function evaluateTurnEnd(findFreeSpotFn) {
     }
   }
 
-  // 2. Comprobar faltas de primer toque
   const hit = gameState.firstBallHit;
   let foulReason = null;
 
@@ -185,7 +181,6 @@ export function evaluateTurnEnd(findFreeSpotFn) {
     }
   }
 
-  // 3. Asignar Lisas o Rayadas si la mesa estaba abierta y no hubo falta
   const coloredPocketed = pocketed.filter((n) => n !== 8);
   let assignedNow = false;
 
@@ -197,7 +192,6 @@ export function evaluateTurnEnd(findFreeSpotFn) {
     assignedNow = true;
   }
 
-  // 4. Evaluar bolas metidas (propias y del rival)
   const updatedGroup = gameState.groups[p];
   const scoredOwnBall =
     updatedGroup &&
@@ -206,7 +200,6 @@ export function evaluateTurnEnd(findFreeSpotFn) {
     updatedGroup &&
     coloredPocketed.some((n) => (updatedGroup === "solid" ? n > 8 : n < 8));
 
-  // Si hay falta o metiste una bola del rival, pasa el turno
   if (foulReason || scoredOpponentBall) {
     gameState.turn = opp;
     const msg = foulReason
@@ -220,7 +213,6 @@ export function evaluateTurnEnd(findFreeSpotFn) {
     };
   }
 
-  // Si asignaste grupo ahora o metiste bola propia sin falta, repites tiro
   if (assignedNow || scoredOwnBall) {
     return {
       event: assignedNow ? "assigned" : "keep_turn",
@@ -232,7 +224,6 @@ export function evaluateTurnEnd(findFreeSpotFn) {
     };
   }
 
-  // No entró ninguna bola -> cambio limpio de turno
   gameState.turn = opp;
   return {
     event: "switch_turn",

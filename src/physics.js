@@ -56,7 +56,6 @@ function collectCueBallManifoldContacts() {
 }
 
 export async function initPhysics() {
-  // Inicializa la librería cargada en el <script> del HTML
   AmmoLib = await window.Ammo();
 
   const collisionConfiguration = new AmmoLib.btDefaultCollisionConfiguration();
@@ -130,7 +129,6 @@ export function updatePhysics(deltaTime) {
 
   for (let i = 0; i < rigidBodies.length; i++) {
     const objThree = rigidBodies[i];
-    // Si la bola ya entró en una tronera, dejamos que Tween.js anime su caída
     if (objThree.userData.ballInfo && objThree.userData.ballInfo.pocketed) continue;
 
     const objPhys = objThree.userData.physicsBody;

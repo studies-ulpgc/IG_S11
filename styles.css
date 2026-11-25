@@ -19,7 +19,6 @@ canvas {
   display: none !important;
 }
 
-/* --- HUD SUPERIOR ESTILO WII SPORTS --- */
 #hud-top {
   position: fixed;
   top: 16px;
@@ -212,7 +211,6 @@ canvas {
   font-weight: 600;
 }
 
-/* --- BOTONES ESQUINA SUPERIOR DERECHA --- */
 #hud-actions {
   position: fixed;
   top: 16px;
@@ -256,7 +254,6 @@ canvas {
   color: #0284c7;
 }
 
-/* --- MODALES WII SPORTS (Intro, Pausa, Ayuda, Fin) --- */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -405,7 +402,6 @@ canvas {
   width: 100%;
 }
 
-/* --- SELECTORES DE MODO --- */
 .start-subtitle {
   color: #64748b;
   font-size: 13px;
@@ -472,7 +468,6 @@ canvas {
   color: #fff;
 }
 
-/* --- HUD INFERIOR --- */
 #hud-bottom {
   position: fixed;
   bottom: 20px;
@@ -513,7 +508,6 @@ canvas {
   box-shadow: 0 3px 10px rgba(14, 165, 233, 0.35);
 }
 
-/* --- BANNER ANUNCIO ESTILO WII SPORTS --- */
 .wii-announcement {
   position: fixed;
   top: 22%;

@@ -35,18 +35,17 @@ export function initCue(scene) {
   cueMesh = new THREE.Mesh(shaftGeo, woodMat);
   cueMesh.castShadow = true;
 
-  // Punta azul
   const tipGeo = new THREE.CylinderGeometry(0.02, 0.02, 0.04, 16);
   tipGeo.rotateZ(Math.PI / 2);
   const tipMesh = new THREE.Mesh(tipGeo, new THREE.MeshStandardMaterial({ color: 0x2563eb }));
   tipMesh.position.x = -0.02;
   cueMesh.add(tipMesh);
 
-  // Culata negra
-  const buttGeo = new THREE.CylinderGeometry(0.034, 0.043, 0.85, 16);
+  const buttLength = 1.05;
+  const buttGeo = new THREE.CylinderGeometry(0.048, 0.037, buttLength, 16);
   buttGeo.rotateZ(Math.PI / 2);
-  const buttMesh = new THREE.Mesh(buttGeo, new THREE.MeshStandardMaterial({ color: 0x1e1b18, roughness: 0.2 }));
-  buttMesh.position.x = -cueLength + 0.425;
+  const buttMesh = new THREE.Mesh(buttGeo, new THREE.MeshStandardMaterial({ color: 0x1e1b18, roughness: 0.25 }));
+  buttMesh.position.x = -cueLength + buttLength / 2 - 0.02;
   cueMesh.add(buttMesh);
 
   cueMesh.position.x = -(BALL_RADIUS + 0.12);
@@ -55,7 +54,6 @@ export function initCue(scene) {
   cueGroup.add(cueMesh);
   scene.add(cueGroup);
 
-  // Línea de apuntado hecha con segmentos 3D reales (grosor, largo y color dinámicos)
   aimGroup = new THREE.Group();
   dashMat = new THREE.MeshBasicMaterial({
     color: 0xffffff,

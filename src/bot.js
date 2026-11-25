@@ -37,7 +37,6 @@ export function triggerBotTurn(onStartBanner) {
     const shot = computeBestShot();
     saveTurnSnapshot();
 
-    // Calculamos el ángulo más corto para girar el taco sin dar vueltas innecesarias
     let diff = (shot.angle - aimAngle) % (Math.PI * 2);
     if (diff > Math.PI) diff -= Math.PI * 2;
     if (diff < -Math.PI) diff += Math.PI * 2;
@@ -65,7 +64,6 @@ export function triggerBotTurn(onStartBanner) {
   }, 700);
 }
 
-// Comprueba si alguna bola bloquea el segmento entre pointA y pointB
 function isPathBlocked(pointA, pointB, ignoreBalls = []) {
   const seg = new THREE.Vector3().subVectors(pointB, pointA);
   seg.y = 0;
@@ -127,7 +125,6 @@ function computeBestShot() {
       const alignment = dirCueToGhost.dot(dirToPocket);
       if (alignment < 0.25) continue;
 
-      // Penalizamos si hay bolas estorbando en cualquiera de los dos tramos
       const blockedCue = isPathBlocked(cueBall.position, ghostPos, [cueBall, target]);
       const blockedPocket = isPathBlocked(target.position, pocket, [cueBall, target]);
       const obstaclePenalty = (blockedCue ? 12 : 0) + (blockedPocket ? 10 : 0);

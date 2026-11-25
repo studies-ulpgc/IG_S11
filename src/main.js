@@ -279,6 +279,14 @@ function showWiiAnnouncement({ title, sub, type = "solid", badgeText = "" }) {
 }
 
 function playEarlyEightAnimation(pocketPos, result) {
+  if (gameState.mode === "bot" && result.winner === 1) {
+    playVictoryFanfare();
+    playApplauseSound();
+    playVictoryAnimation(result);
+    return;
+  }
+
+  playAwwSound();
   controls.enabled = false;
 
   const ringGeo = new THREE.RingGeometry(0.15, 0.28, 32);
@@ -311,7 +319,7 @@ function playEarlyEightAnimation(pocketPos, result) {
       camera.position.y += (Math.random() - 0.5) * 0.14;
       camera.lookAt(pocketPos);
     })
-    .onComplete(() => showGameOverModal(result, "Fin"))
+    .onComplete(() => showGameOverModal(result, "💥"))
     .start();
 }
 
@@ -340,12 +348,13 @@ function playVictoryAnimation(result) {
 
 function showGameOverModal(result, icon) {
   const isBot = gameState.mode === "bot";
-  const winnerLabel = result.winner === 2 && isBot ? "el Bot" : `Jugador ${result.winner}`;
+  const playerLostToBot = isBot && result.winner === 2;
+  const winnerLabel = playerLostToBot ? "el Bot" : `Jugador ${result.winner}`;
   const reasonText = isBot ? result.reason.replace("Jugador 2", "el Bot") : result.reason;
 
-  document.getElementById("gameover-icon").textContent = icon;
+  document.getElementById("gameover-icon").textContent = playerLostToBot ? "☠️" : icon;
   const titleEl = document.getElementById("gameover-title");
-  titleEl.textContent = `¡Gana ${winnerLabel}!`;
+  titleEl.textContent = playerLostToBot ? "¡Perdiste!" : `¡Gana ${winnerLabel}!`;
   titleEl.style.color = result.winner === 1 ? "#0284c7" : "#e11d48";
   document.getElementById("gameover-reason").textContent = reasonText;
   document.getElementById("gameover-modal").classList.remove("hidden");
@@ -477,7 +486,6 @@ function setupControls() {
     }
   });
 
-  // Pausa
   document.getElementById("btn-pause")?.addEventListener("click", togglePause);
   document.getElementById("btn-resume")?.addEventListener("click", () => {
     isPaused = false;
@@ -493,7 +501,6 @@ function setupControls() {
     startIntroMusic();
   });
 
-  // Selector de 3 modos de audio
   const btnSoundMode = document.getElementById("btn-sound-mode");
   if (btnSoundMode) {
     btnSoundMode.addEventListener("click", () => {
@@ -509,7 +516,6 @@ function setupControls() {
     });
   }
 
-  // Cámaras
   document.getElementById("btn-cam-1").addEventListener("click", () => setCameraMode(1));
   document.getElementById("btn-cam-2").addEventListener("click", () => setCameraMode(2));
   document.getElementById("btn-cenital-rot").addEventListener("click", () => {
@@ -518,7 +524,6 @@ function setupControls() {
   });
   document.getElementById("btn-cam-3").addEventListener("click", () => setCameraMode(3));
 
-  // Desplegable y ayuda
   document.getElementById("btn-pocketed-toggle").addEventListener("click", () => {
     document.getElementById("pocketed-panel").classList.toggle("hidden");
   });
@@ -529,7 +534,6 @@ function setupControls() {
     document.getElementById("help-modal").classList.add("hidden");
   });
 
-  // Selector de modo en la pantalla de inicio
   document.getElementById("btn-mode-practice")?.addEventListener("click", () => restartMatch("practice"));
   document.getElementById("btn-mode-pvp")?.addEventListener("click", () => restartMatch("pvp"));
   document.querySelectorAll(".diff-btn").forEach((btn) => {
@@ -538,7 +542,6 @@ function setupControls() {
     });
   });
 
-  // Rebobinar en práctica y Rendirse
   document.getElementById("btn-rewind").addEventListener("click", () => {
     if (areAllBallsStopped() && rewindLastShot()) {
       updateHUD("Tiro rebobinado ⏪");
@@ -553,7 +556,6 @@ function setupControls() {
     }
   });
 
-  // Botones del modal de fin de partida
   document.getElementById("btn-play-again").addEventListener("click", () => restartMatch(gameState.mode, gameState.botDifficulty));
   document.getElementById("btn-toggle-practice").addEventListener("click", () => {
     if (startModal) {
@@ -722,7 +724,6 @@ function animate() {
   requestAnimationFrame(animate);
   const rawDt = Math.min(clock.getDelta(), 0.05);
 
-  // 1. Intro Wii Sports: cámara orbitando suavemente alrededor de la mesa
   if (isStartModalOpen()) {
     introOrbitAngle += rawDt * 0.22;
     camera.position.set(Math.cos(introOrbitAngle) * 9.5, 5.2, Math.sin(introOrbitAngle) * 9.5);
@@ -731,7 +732,6 @@ function animate() {
     return;
   }
 
-  // 2. Pausa: partida congelada de fondo
   if (isPaused) {
     renderer.render(scene, camera);
     return;
@@ -741,19 +741,16 @@ function animate() {
   const dt = isTurbo ? rawDt * 2.5 : rawDt;
   const stopped = areAllBallsStopped();
 
-  // Giro de apuntado
   if (!isShooting && !gameState.gameOver && !isBotTurn()) {
     const turnSpeed = keysPressed["ShiftLeft"] || keysPressed["ShiftRight"] ? 2.4 : 1.1;
     if (keysPressed["ArrowLeft"]) setAimAngle(aimAngle - turnSpeed * dt);
     if (keysPressed["ArrowRight"]) setAimAngle(aimAngle + turnSpeed * dt);
   }
 
-  // Simulación física
   const simSteps = !stopped && isTurbo ? 4 : 1;
   for (let s = 0; s < simSteps; s++) {
     updatePhysics(rawDt);
 
-    // Detectar contactos reales registrados por Ammo.js
     for (const ballNumber of getCueBallContacts()) {
       registerFirstBallHit(ballNumber);
     }
@@ -776,7 +773,6 @@ function animate() {
     if (areAllBallsStopped()) break;
   }
 
-  // Fin del turno cuando acaban de detenerse las bolas
   if (stopped && wasMoving) {
     wasMoving = false;
     respawnCueBallIfPocketed();
@@ -808,7 +804,6 @@ function animate() {
       } else if (result.event === "switch_turn") {
         playAwwSound();
       } else if (result.event === "early_eight_loss") {
-        playAwwSound();
         playEarlyEightAnimation(lastPocketPos, result);
       } else if (result.event === "win") {
         playVictoryFanfare();
@@ -824,7 +819,6 @@ function animate() {
     wasMoving = true;
   }
 
-  // Turno del Bot
   if (stopped && !isShooting && !gameState.gameOver && isBotTurn()) {
     triggerBotTurn((msg) => updateHUD(msg));
   }
@@ -838,7 +832,6 @@ function animate() {
     }
   }
 
-  // Animación de confeti y órbita en victoria
   if (gameState.gameOver && gameState.winner && confettiParticles.length > 0) {
     victoryOrbitAngle += rawDt * 0.4;
     camera.position.set(Math.cos(victoryOrbitAngle) * 9, 6.5, Math.sin(victoryOrbitAngle) * 9);

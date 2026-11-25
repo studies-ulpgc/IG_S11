@@ -1,6 +1,5 @@
 import * as THREE from "three";
 
-// Importamos los audios para que Parcel pueda empaquetarlos.
 import introUrl from "./sounds/intro.mp3";
 import applauseUrl from "./sounds/applause.mp3";
 import awwUrl from "./sounds/aww.mp3";
@@ -69,11 +68,9 @@ export function initAudioSystem(camera) {
   listener = new THREE.AudioListener();
   camera.add(listener);
 
-  // Todos los sonidos comparten el mismo contexto.
   audioContext = listener.context;
   bgMusic = new THREE.Audio(listener);
 
-  // Activación del audio mediante interacción del usuario.
   document.addEventListener("pointerdown", unlockAudio, true);
   document.addEventListener("keydown", unlockAudio, true);
   document.addEventListener("touchend", unlockAudio, true);
@@ -196,10 +193,6 @@ function getReadyContext() {
   return audioContext;
 }
 
-// ==========================================
-// SONIDOS DE MESA
-// ==========================================
-
 export function playCueHitSound(power = 0.5) {
   if (soundMode === "mute") return;
 
@@ -297,10 +290,6 @@ export function playPocketSound() {
   osc.start();
   osc.stop(ctx.currentTime + 0.24);
 }
-
-// ==========================================
-// SONIDOS DE ESPECTÁCULO
-// ==========================================
 
 export function playApplauseSound() {
   if (soundMode !== "show") return;
