@@ -62,7 +62,7 @@ En la siguiente tabla se detallan los elementos tridimensionales, físicos y de 
 | **Taco y Guía de Tiro** | Taco bicónico, barra 3D de potencia y línea predictiva | Geometrías jerárquicas (`THREE.Group`) vinculadas a la bola blanca con cálculo de impacto mediante `THREE.Raycaster`. |
 | **Cámaras** | Vista Tiro (1), Cenital 2D H/V (2) y Libre 3D (3) | Transiciones interpoladas con **Tween.js**, seguimiento dinámico en disparo y control orbital/panorámico con `OrbitControls`. |
 | **Iluminación y Sombras** | Luz ambiental y foco cenital direccional | `AmbientLight` + `DirectionalLight` con mapa de sombras (`2048×2048`) proyectadas sobre el tapete y las bandas. |
-| **Interfaz y Audio** | HUD Wii Sports, Banners, Pausa y Web Audio API | Interfaz HTML/CSS superpuesta y sintetizador procedural de golpes, troneras, música de intro, aplausos y fanfarria. |
+| **Interfaz y Audio** | HUD Wii Sports, Banners, Pausa y Web Audio API | Interfaz HTML/CSS superpuesta y sintetizador procedural de golpes, troneras, música de intro y aplausos. |
 
 ---
 
@@ -70,7 +70,7 @@ En la siguiente tabla se detallan los elementos tridimensionales, físicos y de 
 
 En esta sección se presentan los vídeos demostrativos de la aplicación divididos por bloques funcionales, comenzando por una presentación general de la pantalla de inicio y las mecánicas básicas de juego, seguida de demostraciones específicas del audio, cámaras, modos de juego, reglas y desenlaces.
 
-> **Nota sobre el audio:** Todos los vídeos incluyen sonido generado en tiempo real mediante **Web Audio API** (música de presentación, impacto del taco, choque entre bolas, caída en tronera, aplausos, lamentos y fanfarria de victoria).
+> **Nota sobre el audio:** Todos los vídeos incluyen sonido generado en tiempo real mediante **Web Audio API** (música de presentación, impacto del taco, choque entre bolas, caída en tronera, aplausos, lamentos y música de victoria).
 
 ---
 
