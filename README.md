@@ -84,8 +84,7 @@ Presentación de la pantalla inicial estilo *Wii Sports* y demostración detalla
 > [!IMPORTANT]
 > **Velocidad 100 % en tiempo real (sin edición de vídeo):** Ninguna de las aceleraciones que se observan en este ni en el resto de vídeos ha sido aplicada con un editor externo. Todas corresponden a mecánicas nativas del juego al mantener pulsadas las teclas **`Shift`** (giro rápido de apuntado) y **`Enter`** (modo Turbo, que multiplica la velocidad de simulación física y movimiento).
 
-<!-- PEGAR AQUÍ ENLACE DEL VÍDEO 1 EN GITHUB -->
-https://github.com/user-attachments/assets/REEMPLAZAR_VIDEO_1
+https://github.com/user-attachments/assets/af7908a5-47be-48ff-ab91-fc602a98efe0
 
 <div align="center">
   <sub><a href="./readme_media/demos/01_intro_mecanicas.mp4">Descargar vídeo MP4</a></sub>
@@ -105,8 +104,7 @@ Demostración del gestor de sonido en tres niveles, la transición entre las tre
 > [!NOTE]
 > **Vídeo con audio:** Muestra en directo el cambio entre los modos *Audiencia*, *Solo Mesa* y *Silencio*.
 
-<!-- PEGAR AQUÍ ENLACE DEL VÍDEO 2 EN GITHUB -->
-https://github.com/user-attachments/assets/REEMPLAZAR_VIDEO_2
+https://github.com/user-attachments/assets/30f61603-ff22-4f2f-9895-92b2af7126b2
 
 <div align="center">
   <sub><a href="./readme_media/demos/02_audio_camaras_menu.mp4">Descargar vídeo MP4</a></sub>
@@ -126,8 +124,7 @@ Comparativa práctica entre las tres modalidades disponibles en el selector inic
 > [!NOTE]
 > **Vídeo con audio:** Incluye efectos de interfaz, sonidos de tiro y reacciones del público durante los turnos.
 
-<!-- PEGAR AQUÍ ENLACE DEL VÍDEO 3 EN GITHUB -->
-https://github.com/user-attachments/assets/REEMPLAZAR_VIDEO_3
+https://github.com/user-attachments/assets/7f24193f-b5c0-4e4b-a363-029f2649c858
 
 <div align="center">
   <sub><a href="./readme_media/demos/03_modos_juego.mp4">Descargar vídeo MP4</a></sub>
@@ -147,8 +144,7 @@ Muestra la lógica arbitral de Bola 8 (asignación de grupos, banners animados, 
 > [!NOTE]
 > **Vídeo con audio:** Incluye aplausos al asignar grupo o encadenar jugadas legales y sonido de lamento (*aww*) al cometer falta.
 
-<!-- PEGAR AQUÍ ENLACE DEL VÍDEO 4 EN GITHUB -->
-https://github.com/user-attachments/assets/REEMPLAZAR_VIDEO_4
+https://github.com/user-attachments/assets/18569546-fc79-4ca6-bbca-9d9d713285f0
 
 <div align="center">
   <sub><a href="./readme_media/demos/04_reglas_faltas.mp4">Descargar vídeo MP4</a></sub>
@@ -170,8 +166,7 @@ Demostración de las secuencias cinemáticas de cierre de partida tanto al ganar
 > [!NOTE]
 > **Vídeo con audio:** Incluye fanfarria de victoria con aplausos y efecto de derrota.
 
-<!-- PEGAR AQUÍ ENLACE DEL VÍDEO 5 EN GITHUB -->
-https://github.com/user-attachments/assets/REEMPLAZAR_VIDEO_5
+https://github.com/user-attachments/assets/b86d597b-7891-4a0c-9c8a-7b8e68dd435e
 
 <div align="center">
   <sub><a href="./readme_media/demos/05_finales_partida.mp4">Descargar vídeo MP4</a></sub>
@@ -250,7 +245,7 @@ Correspondencia técnica entre los ejemplos de clase ([`otsedom`](https://github
 
 Se detallan ejemplos del uso de modelos de IA (**Google Gemini**) como asistente de soporte técnico durante el desarrollo del proyecto:
 
-- **Integración de Ammo.js, lógica de reglas Bola 8, IA del Bot, audio procedural y pulido visual:** *(añadir aquí el enlace compartido de esta conversación de Gemini cuando lo generes)*
+- **Integración de Ammo.js, lógica de reglas Bola 8, IA del Bot, audio procedural y pulido visual:** [Consulta sobre unos errores puntuales](https://share.gemini.google/MGVGNVuufcLv)
 - **Asistencia técnica:** Depuración de *manifolds* de contacto en Ammo.js, resolución de *Z-fighting* en la geometría del taco, ajuste de cámaras con Tween.js y maquetación de la documentación.
 
 ---
