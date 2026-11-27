@@ -32,7 +32,7 @@
 3. [Demostraciones en Vídeo y Funcionalidades](#3-demostraciones-en-v%C3%ADdeo-y-funcionalidades)
    - [3.1. Intro, Mecánicas de Tiro y Raycasting](#31-intro-mec%C3%A1nicas-de-tiro-y-raycasting)
    - [3.2. Sistema de Audio, Cámaras y Menú de Pausa](#32-sistema-de-audio-c%C3%A1maras-y-men%C3%BA-de-pausa)
-   - [3.3. Modos de Juego: Práctica, 1 vs 1 Local y Vs Bot IA](#33-modos-de-juego-pr%C3%A1ctica-1-vs-1-local-y-vs-bot-ia)
+   - [3.3. Modos de Juego: Práctica, 1 vs 1 Local y Vs Bot](#33-modos-de-juego-pr%C3%A1ctica-1-vs-1-local-y-vs-bot)
    - [3.4. Reglas Oficiales de Bola 8 y Detección de Faltas](#34-reglas-oficiales-de-bola-8-y-detecci%C3%B3n-de-faltas)
    - [3.5. Finales de Partida (Victoria con Confeti y Derrota)](#35-finales-de-partida-victoria-con-confeti-y-derrota)
 4. [Análisis Técnico: Física Rígida, Texturas Procedurales y Audio](#4-an%C3%A1lisis-t%C3%A9cnico-f%C3%ADsica-r%C3%ADgida-texturas-procedurales-y-audio)
@@ -88,7 +88,7 @@ Presentación de la pantalla inicial estilo *Wii Sports* y demostración detalla
 https://github.com/user-attachments/assets/REEMPLAZAR_VIDEO_1
 
 <div align="center">
-  <sub><a href="./readme_media/demos/01_intro_mecanicas.mp4">Descargar vídeo MP4</a> · <a href="./readme_media/shorts/01_intro_mecanicas.gif">Ver versión GIF</a></sub>
+  <sub><a href="./readme_media/demos/01_intro_mecanicas.mp4">Descargar vídeo MP4</a></sub>
 </div>
 
 **Funcionalidades mostradas:**
@@ -109,7 +109,7 @@ Demostración del gestor de sonido en tres niveles, la transición entre las tre
 https://github.com/user-attachments/assets/REEMPLAZAR_VIDEO_2
 
 <div align="center">
-  <sub><a href="./readme_media/demos/02_audio_camaras_menu.mp4">Descargar vídeo MP4</a> · <a href="./readme_media/shorts/02_audio_camaras_menu.gif">Ver versión GIF</a></sub>
+  <sub><a href="./readme_media/demos/02_audio_camaras_menu.mp4">Descargar vídeo MP4</a></sub>
 </div>
 
 **Funcionalidades mostradas:**
@@ -130,7 +130,7 @@ Comparativa práctica entre las tres modalidades disponibles en el selector inic
 https://github.com/user-attachments/assets/REEMPLAZAR_VIDEO_3
 
 <div align="center">
-  <sub><a href="./readme_media/shorts/03_modos_juego.mp4">Descargar vídeo MP4</a> · <a href="./readme_media/shorts/03_modos_juego.gif">Ver versión GIF</a></sub>
+  <sub><a href="./readme_media/demos/03_modos_juego.mp4">Descargar vídeo MP4</a></sub>
 </div>
 
 **Diferencias entre los modos mostrados:**
@@ -151,7 +151,7 @@ Muestra la lógica arbitral de Bola 8 (asignación de grupos, banners animados, 
 https://github.com/user-attachments/assets/REEMPLAZAR_VIDEO_4
 
 <div align="center">
-  <sub><a href="./readme_media/shorts/04_reglas_faltas.mp4">Descargar vídeo MP4</a> · <a href="./readme_media/shorts/04_reglas_faltas.gif">Ver versión GIF</a></sub>
+  <sub><a href="./readme_media/demos/04_reglas_faltas.mp4">Descargar vídeo MP4</a></sub>
 </div>
 
 **Funcionalidades mostradas:**
@@ -174,7 +174,7 @@ Demostración de las secuencias cinemáticas de cierre de partida tanto al ganar
 https://github.com/user-attachments/assets/REEMPLAZAR_VIDEO_5
 
 <div align="center">
-  <sub><a href="./readme_media/demos/05_finales_partida.mp4">Descargar vídeo MP4</a> · <a href="./readme_media/shorts/05_finales_partida.gif">Ver versión GIF</a></sub>
+  <sub><a href="./readme_media/demos/05_finales_partida.mp4">Descargar vídeo MP4</a></sub>
 </div>
 
 **Funcionalidades mostradas:**
@@ -198,10 +198,10 @@ https://github.com/user-attachments/assets/REEMPLAZAR_VIDEO_5
 
 ### 5.1. Estructura de Módulos y Organización de Archivos
 
-<pre><b>IG_Semana_8/</b>
+<pre><b>IG_S11/</b>
 ├── <a href="./readme_media/">readme_media/</a>                 # Recursos multimedia de la documentación
 │   ├── <a href="./readme_media/assets/">assets/</a>                   # Logotipo institucional ULPGC
-│   └── <a href="./readme_media/shorts/">shorts/</a>                   # Animaciones en formato GIF y MP4
+│   └── <a href="./readme_media/demos/">demos/</a>                    # Vídeos demostrativos en formato MP4
 ├── <a href="./src/">src/</a>                          # Código fuente de la aplicación
 │   ├── <a href="./src/audio.js">audio.js</a>                  # Sintetizador Web Audio API y gestor de 3 modos de sonido
 │   ├── <a href="./src/balls.js">balls.js</a>                  # Creación de las 16 bolas, texturas procedurales y colocación en triángulo
