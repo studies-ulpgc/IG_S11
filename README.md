@@ -30,10 +30,11 @@
 1. [Resumen del Proyecto](#1-resumen-del-proyecto)
 2. [Componentes de la Escena y Motor Físico](#2-componentes-de-la-escena-y-motor-f%C3%ADsico)
 3. [Demostraciones en Vídeo y Funcionalidades](#3-demostraciones-en-v%C3%ADdeo-y-funcionalidades)
-   - [3.1. Demo General: Menú Wii Sports, Cámaras y Partida Completa](#31-demo-general-men%C3%BA-wii-sports-c%C3%A1maras-y-partida-completa)
-   - [3.2. Mini Demo: Controles de Tiro, Potencia y Raycasting](#32-mini-demo-controles-de-tiro-potencia-y-raycasting)
-   - [3.3. Mini Demo: Reglas de Bola 8, Faltas y Rebobinado](#33-mini-demo-reglas-de-bola-8-faltas-y-rebobinado)
-   - [3.4. Mini Demo: Finales de Partida (Victoria con Confeti y Derrota)](#34-mini-demo-finales-de-partida-victoria-con-confeti-y-derrota)
+   - [3.1. Intro, Mecánicas de Tiro y Raycasting](#31-intro-mec%C3%A1nicas-de-tiro-y-raycasting)
+   - [3.2. Sistema de Audio, Cámaras y Menú de Pausa](#32-sistema-de-audio-c%C3%A1maras-y-men%C3%BA-de-pausa)
+   - [3.3. Modos de Juego: Práctica, 1 vs 1 Local y Vs Bot IA](#33-modos-de-juego-pr%C3%A1ctica-1-vs-1-local-y-vs-bot-ia)
+   - [3.4. Reglas Oficiales de Bola 8 y Detección de Faltas](#34-reglas-oficiales-de-bola-8-y-detecci%C3%B3n-de-faltas)
+   - [3.5. Finales de Partida (Victoria con Confeti y Derrota)](#35-finales-de-partida-victoria-con-confeti-y-derrota)
 4. [Análisis Técnico: Física Rígida, Texturas Procedurales y Audio](#4-an%C3%A1lisis-t%C3%A9cnico-f%C3%ADsica-r%C3%ADgida-texturas-procedurales-y-audio)
 5. [Arquitectura del Proyecto y Comparativa Académica](#5-arquitectura-del-proyecto-y-comparativa-acad%C3%A9mica)
 6. [Bibliografía, Fuentes y Colaboradores](#6-bibliograf%C3%ADa-fuentes-y-colaboradores)
@@ -67,91 +68,118 @@ En la siguiente tabla se detallan los elementos tridimensionales, físicos y de 
 
 ## 3. Demostraciones en Vídeo y Funcionalidades
 
-En esta sección se presenta una **demostración general** del funcionamiento global de la aplicación seguida de **mini demos** centradas en mecánicas específicas.
+En esta sección se presentan los vídeos demostrativos de la aplicación divididos por bloques funcionales, comenzando por una presentación general de la pantalla de inicio y las mecánicas básicas de juego, seguida de demostraciones específicas del audio, cámaras, modos de juego, reglas y desenlaces.
 
 > **Nota sobre el audio:** Todos los vídeos incluyen sonido generado en tiempo real mediante **Web Audio API** (música de presentación, impacto del taco, choque entre bolas, caída en tronera, aplausos, lamentos y fanfarria de victoria).
 
 ---
 
-### 3.1. Demo General: Menú Wii Sports, Cámaras y Partida Completa
+### 3.1. Intro, Mecánicas de Tiro y Raycasting
 
-Recorrido general por la aplicación desde la pantalla de inicio hasta el desarrollo de una partida contra la IA, mostrando la interfaz, la pausa y las distintas vistas de cámara.
+Presentación de la pantalla inicial estilo *Wii Sports* y demostración detallada de cómo apuntar, regular la potencia, utilizar la línea predictiva y acelerar el juego en tiempo real.
 
 > [!NOTE]
-> **Vídeo con audio:** Incluye la melodía de presentación estilo *Wii Sports*, efectos de interfaz, sonidos de mesa y ambiente de público.
+> **Vídeo con audio:** Incluye la melodía de presentación estilo *Wii Sports*, el golpe del taco y colisiones múltiples con volumen proporcional a la fuerza del impacto.
 
-<!-- PEGAR AQUÍ ENLACE DE LA DEMO GENERAL EN GITHUB -->
-https://github.com/user-attachments/assets/REEMPLAZAR_DEMO_GENERAL
+> [!IMPORTANT]
+> **Velocidad 100 % en tiempo real (sin edición de vídeo):** Ninguna de las aceleraciones que se observan en este ni en el resto de vídeos ha sido aplicada con un editor externo. Todas corresponden a mecánicas nativas del juego al mantener pulsadas las teclas **`Shift`** (giro rápido de apuntado) y **`Enter`** (modo Turbo, que multiplica la velocidad de simulación física y movimiento).
+
+<!-- PEGAR AQUÍ ENLACE DEL VÍDEO 1 EN GITHUB -->
+https://github.com/user-attachments/assets/REEMPLAZAR_VIDEO_1
 
 <div align="center">
-  <sub><a href="./readme_media/demos/01_demo_general.mp4">Descargar vídeo MP4</a> · <a href="./readme_media/shorts/01_demo_general.gif">Ver versión GIF</a></sub>
+  <sub><a href="./readme_media/demos/01_intro_mecanicas.mp4">Descargar vídeo MP4</a> · <a href="./readme_media/shorts/01_intro_mecanicas.gif">Ver versión GIF</a></sub>
 </div>
 
 **Funcionalidades mostradas:**
-- **Pantalla de inicio y modos:** Cámara orbital sobre la mesa, selección entre *Práctica*, *1 vs 1 Local* y *Vs Bot* (*Fácil*, *Medio*, *Difícil*).
-- **Control de audio y pausa:** Conmutador de sonido en 3 estados (*Audiencia*, *Solo Mesa*, *Silencio*) y menú de pausa (`Esc`), donde se puede reanudar, reiniciar o abandonar partida (también se puede abandonar partida mediante el botón de rendirse).
-- **Tres vistas de cámara:** Vista Tiro (`1`), Cenital 2D con rotación Horizontal/Vertical (`2`) y Vista Libre 3D (`3`).
+- **Pantalla de inicio estilo *Wii Sports*:** Cámara orbital continua alrededor de la mesa con fondo difuminado y guía rápida de controles (`?`).
+- **Apuntado y control de potencia:** Giro fino (`←`/`→`), giro rápido (`Shift`), carga progresiva (`Espacio`), reducción de potencia (`↓`) y modo Turbo (`Enter`).
+- **Línea predictiva (`THREE.Raycaster`):** Proyección en tiempo real del punto de impacto contra la primera bola o banda y dirección estimada de rebote.
 
 ---
 
-### 3.2. Mini Demo: Controles de Tiro, Potencia y Raycasting
+### 3.2. Sistema de Audio, Cámaras y Menú de Pausa
 
-Demostración detallada del sistema de apuntado, la barra de potencia y la línea predictiva calculada por proyección de rayos.
+Demostración del gestor de sonido en tres niveles, la transición entre las tres perspectivas de cámara y las opciones de pausa de la partida.
 
 > [!NOTE]
-> **Vídeo con audio:** Incluye el golpe del taco y colisiones múltiples con volumen proporcional a la fuerza del impacto.
+> **Vídeo con audio:** Muestra en directo el cambio entre los modos *Audiencia*, *Solo Mesa* y *Silencio*.
 
-<!-- PEGAR AQUÍ ENLACE DE MINI DEMO 1 -->
-https://github.com/user-attachments/assets/REEMPLAZAR_MINI_DEMO_1
+<!-- PEGAR AQUÍ ENLACE DEL VÍDEO 2 EN GITHUB -->
+https://github.com/user-attachments/assets/REEMPLAZAR_VIDEO_2
 
 <div align="center">
-  <sub><a href="./readme_media/demos/02_controles_raycast.mp4">Descargar vídeo MP4</a> · <a href="./readme_media/shorts/02_controles_raycast.gif">Ver versión GIF</a></sub>
+  <sub><a href="./readme_media/demos/02_audio_camaras_menu.mp4">Descargar vídeo MP4</a> · <a href="./readme_media/shorts/02_audio_camaras_menu.gif">Ver versión GIF</a></sub>
 </div>
 
 **Funcionalidades mostradas:**
-- **Apuntado y control de fuerza:** Giro preciso (`←`/`→` + `Shift`), carga progresiva (`Espacio`), reducción de potencia (`↓`) y modo Turbo (`Enter`).
-- **Línea predictiva (`THREE.Raycaster`):** Cálculo en tiempo real del punto de choque con la primera bola o banda y dirección estimada de rebote.
+- **Conmutador de audio de 3 estados:** *Audiencia* (música, público que te aplaude o lamenta dependiendo de si aciertas o fallas, y efectos de mesa), *Solo Mesa* (únicamente impactos y troneras) y *Silencio*.
+- **Tres vistas de cámara:** Vista Tiro con seguimiento automático (`1`), Vista Cenital 2D con rotación Horizontal/Vertical (`2` y botón `↻ H/V`) y Vista Libre 3D orbital (`3`).
+- **Menú de pausa (`Esc`):** Congelación de la simulación para reanudar la partida, reiniciar la mesa o regresar al menú principal (además del botón de rendición `🏳️`).
 
 ---
 
-### 3.3. Mini Demo: Reglas de Bola 8, Faltas y Rebobinado
+### 3.3. Modos de Juego: Práctica, 1 vs 1 Local y Vs Bot
 
-Muestra la lógica arbitral de Bola 8 (asignación de grupos, detección de faltas y bola en mano) junto con la herramienta de rebobinado del modo Práctica.
+Comparativa práctica entre las tres modalidades disponibles en el selector inicial y sus herramientas exclusivas.
 
 > [!NOTE]
-> **Vídeo con audio:** Incluye aplausos al encadenar jugadas legales y sonido de lamento (*aww*) al cometer falta.
+> **Vídeo con audio:** Incluye efectos de interfaz, sonidos de tiro y reacciones del público durante los turnos.
 
-<!-- PEGAR AQUÍ ENLACE DE MINI DEMO 2 -->
-https://github.com/user-attachments/assets/REEMPLAZAR_MINI_DEMO_2
+<!-- PEGAR AQUÍ ENLACE DEL VÍDEO 3 EN GITHUB -->
+https://github.com/user-attachments/assets/REEMPLAZAR_VIDEO_3
 
 <div align="center">
-  <sub><a href="./readme_media/demos/03_reglas_rebobinado.mp4">Descargar vídeo MP4</a> · <a href="./readme_media/shorts/03_reglas_rebobinado.gif">Ver versión GIF</a></sub>
+  <sub><a href="./readme_media/shorts/03_modos_juego.mp4">Descargar vídeo MP4</a> · <a href="./readme_media/shorts/03_modos_juego.gif">Ver versión GIF</a></sub>
+</div>
+
+**Diferencias entre los modos mostrados:**
+- **Modo Práctica (Entrenamiento libre):** Sin turnos ni faltas por grupo; permite embocar todas las bolas libremente (las 16), con el marcador indicando el progreso sobre **14** (`Metidas: X / 14`), ya que si caen la **bola blanca** o la **bola 8**, ambas se regeneran automáticamente en un punto libre de la mesa para seguir entrenando. Además, incluye el botón exclusivo de **rebobinado de tiro (`⏪`)** para restaurar las posiciones y velocidades exactas de las 16 bolas antes del último golpe.
+- **1 vs 1 Local (Multijugador):** Partida por turnos alternos entre Jugador 1 y Jugador 2 en el mismo equipo, aplicando el reglamento completo de Bola 8 y el desplegable de bolas embocadas.
+- **Vs Bot (3 niveles de dificultad):** Enfrentamiento individual contra una inteligencia artificial (*Fácil*, *Medio* o *Difícil*) que calcula el punto de impacto (*ghost ball*), evalúa trayectorias libres de obstáculos hacia las troneras y aplica un margen de error angular según la dificultad elegida.
+
+---
+
+### 3.4. Reglas Oficiales de Bola 8 y Detección de Faltas
+
+Muestra la lógica arbitral de Bola 8 (asignación de grupos, banners animados, detección del primer toque y bola en mano tras falta).
+
+> [!NOTE]
+> **Vídeo con audio:** Incluye aplausos al asignar grupo o encadenar jugadas legales y sonido de lamento (*aww*) al cometer falta.
+
+<!-- PEGAR AQUÍ ENLACE DEL VÍDEO 4 EN GITHUB -->
+https://github.com/user-attachments/assets/REEMPLAZAR_VIDEO_4
+
+<div align="center">
+  <sub><a href="./readme_media/shorts/04_reglas_faltas.mp4">Descargar vídeo MP4</a> · <a href="./readme_media/shorts/04_reglas_faltas.gif">Ver versión GIF</a></sub>
 </div>
 
 **Funcionalidades mostradas:**
-- **Asignación de grupo y banners:** Carteles animados estilo *Wii Sports* al asignar Lisas (1–7) o Rayadas (9–15).
-- **Detección física de faltas:** Validación mediante *manifolds* de Ammo.js del primer toque de la blanca y reposición automática tras falta.
-- **Rebobinado de tiro (`⏪`):** Restauración completa de posiciones y estado de las 16 bolas en el modo Práctica.
+- **Asignación de grupo y banners:** Carteles animados estilo *Wii Sports* al asignar Lisas (1–7) o Rayadas (9–15) tras abrir la mesa.
+- **Detección física de faltas:** Validación mediante *manifolds* de Ammo.js y control arbitral de las distintas infracciones del reglamento (cediendo el turno con reposición automática en un punto libre de la mesa cuando corresponde):
+  - **Embocar la bola blanca (*scratch*):** Caída de la bola blanca en cualquier tronera durante el tiro.
+  - **Embocar una bola del rival:** Meter una bola perteneciente al grupo del oponente (incluso si también entra una propia).
+  - **Primer contacto ilegal o sin impacto:** Golpear en primer lugar una bola del grupo contrario (o la Bola 8 antes de limpiar el grupo propio) o no tocar ninguna bola en todo el tiro.
 
 ---
 
-### 3.4. Mini Demo: Finales de Partida (Victoria con Confeti y Derrota)
+### 3.5. Finales de Partida (Victoria con Confeti y Derrota)
 
 Demostración de las secuencias cinemáticas de cierre de partida tanto al ganar como al perder por meter la Bola 8 antes de tiempo.
 
 > [!NOTE]
 > **Vídeo con audio:** Incluye fanfarria de victoria con aplausos y efecto de derrota.
 
-<!-- PEGAR AQUÍ ENLACE DE MINI DEMO 3 -->
-https://github.com/user-attachments/assets/REEMPLAZAR_MINI_DEMO_3
+<!-- PEGAR AQUÍ ENLACE DEL VÍDEO 5 EN GITHUB -->
+https://github.com/user-attachments/assets/REEMPLAZAR_VIDEO_5
 
 <div align="center">
-  <sub><a href="./readme_media/demos/04_finales_partida.mp4">Descargar vídeo MP4</a> · <a href="./readme_media/shorts/04_finales_partida.gif">Ver versión GIF</a></sub>
+  <sub><a href="./readme_media/demos/05_finales_partida.mp4">Descargar vídeo MP4</a> · <a href="./readme_media/shorts/05_finales_partida.gif">Ver versión GIF</a></sub>
 </div>
 
 **Funcionalidades mostradas:**
-- **Secuencia de victoria:** Lluvia de partículas de confeti 3D, órbita automática de cámara y cartel de triunfo (tanto al meter la 8 legalmente como si el Bot la mete antes de tiempo, o si el rival se rinde).
-- **Secuencia de derrota:** Onda expansiva roja en la tronera, sacudida de cámara y cartel de fin de partida al embocar la Bola 8 de forma prematura.
+- **Secuencia de victoria:** Lluvia de partículas de confeti 3D, órbita automática de cámara y cartel de triunfo (tanto al meter la 8 legalmente como si el Bot la mete antes de tiempo o el rival se rinde).
+- **Secuencia de derrota:** Onda expansiva roja en la tronera, sacudida de cámara y cartel de fin de partida al embocar la Bola 8 de forma prematura (o si el Bot gana la partida).
 
 ---
 

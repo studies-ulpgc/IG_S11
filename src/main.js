@@ -552,6 +552,8 @@ function setupControls() {
     const res = surrenderGame();
     if (res) {
       updateHUD(res.reason);
+      playVictoryFanfare();
+      playApplauseSound();
       playVictoryAnimation(res);
     }
   });
