@@ -47,7 +47,7 @@ El presente proyecto consiste en el desarrollo de un **simulador tridimensional 
 
 La aplicación integra simulación física de cuerpos rígidos con fricción de rodadura y restitución elástica, detección real de contactos mediante *manifolds*, texturas procedurales generadas dinámicamente en `<canvas>`, tres modos de juego (**Práctica libre con rebobinado**, **1 vs 1 Local** y **Vs Bot IA** con tres niveles de dificultad), sistema de cámaras interactivas y síntesis de audio en tiempo real mediante **Web Audio API**.
 
-- **Entorno CodeSandbox del Proyecto:** [Probar Proyecto en Sandbox](https://codesandbox.io/p/sandbox/github/studies-ulpgc/IG_S11)
+- **Entorno CodeSandbox del Proyecto:** [Probar Proyecto en Sandbox](https://codesandbox.io/p/sandbox/ig-s11-g3f4vz)
 
 ---
 
